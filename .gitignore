@@ -2,3 +2,6 @@
 
 downloaded_rna_pdbs/
 *.ent 
+*.pdb
+
+competition_data/
