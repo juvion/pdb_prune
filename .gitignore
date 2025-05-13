@@ -1,0 +1,4 @@
+# Ignore downloaded PDB files and directories
+
+downloaded_rna_pdbs/
+*.ent 
