@@ -1,51 +1,98 @@
-# PDB RNA Processor
+# PDB RNA Structure Processor
 
-This script processes PDB files containing RNA structures using Biopython. It can:
-1. Download PDB files (either randomly or by specific ID)
-2. Isolate RNA chains
-3. Extract specific atoms from each RNA chain
-4. Output the data in PDB format
+A Python tool for processing RNA structures from PDB files, extracting sequences, and converting them to various formats.
+
+## Features
+
+- Process PDB files containing RNA structures
+- Extract RNA sequences and save them as FASTA files
+- Convert PDB structures to NumPy arrays for machine learning applications
+- Handle both `.pdb` and `.ent` file formats
+- Support for multiple RNA chains in a single structure
+- Automatic handling of missing atoms with NaN values
 
 ## Requirements
 
-- Python 3.6 or higher
-- Required packages (install using `pip install -r requirements.txt`):
-  - biopython
-  - requests
+- Python 3.6+
+- Biopython
+- NumPy
+- Requests
 
-## Usage
+## Installation
 
-1. Install the required dependencies:
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/pdb_prune.git
+cd pdb_prune
+```
+
+2. Install the required packages:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Run the script:
+## Usage
+
+### 1. Processing PDB Files
+
+Place your PDB files (`.pdb` or `.ent`) in the `original_pdbs` directory. The script will:
+- Extract RNA chains
+- Save processed structures in `processed_pdbs`
+- Generate FASTA sequences in `rna_sequences`
+- Create NumPy arrays in `npy_files`
+
+Run the processing script:
 ```bash
 python pdb_rna_processor.py
 ```
 
-The script will:
-- Create a `processed_pdbs` directory to store the output files
-- Process an example PDB (1ehz) and 3 random PDBs
-- For each PDB file, it will:
-  - Download the structure
-  - Extract RNA chains
-  - Save each RNA chain as a separate PDB file with only the specified atoms
+### 2. Converting to NumPy Arrays
 
-## Output
+The script will automatically convert processed PDB files to NumPy arrays with the following structure:
+- Shape: `(sequence_length, 7, 3)`
+- 7 atoms per residue: P, O5', C5', C4', C3', O3', and N1/N9
+- Missing atoms are filled with NaN values
 
-The processed PDB files will be saved in the `processed_pdbs` directory with the naming format:
-`{original_pdb_id}_{chain_id}.pdb`
+Run the conversion script:
+```bash
+python pdb_to_npy.py
+```
 
-Each output file contains only the RNA chain with the following atoms:
-- Backbone atoms: P, O5', C5', C4', C3', O3', C2', O2', C1'
-- Base atoms: N1 (for U and C) or N9 (for A and G)
+## Directory Structure
 
-## Customization
+```
+pdb_prune/
+├── original_pdbs/     # Input PDB files
+├── processed_pdbs/    # Processed RNA structures
+├── rna_sequences/     # FASTA sequence files
+├── npy_files/        # NumPy array files
+├── pdb_rna_processor.py
+├── pdb_to_npy.py
+└── requirements.txt
+```
 
-You can modify the script to:
-- Change the number of random PDBs to process
-- Use different PDB IDs
-- Modify the output directory
-- Change the set of atoms to extract 
+## File Formats
+
+### Processed PDB Files
+- Located in `processed_pdbs/`
+- Named as `pdb{id}_{chain}.pdb`
+- Contain only RNA chains with specified atoms
+
+### FASTA Files
+- Located in `rna_sequences/`
+- Named as `pdb{id}_{chain}.fasta`
+- Contain RNA sequences in FASTA format
+
+### NumPy Arrays
+- Located in `npy_files/`
+- Named as `pdb{id}_{chain}.npy`
+- Shape: `(sequence_length, 7, 3)`
+- Atom order: P, O5', C5', C4', C3', O3', N1/N9
+
+## Contributing
+
+Feel free to submit issues and enhancement requests!
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details. 
