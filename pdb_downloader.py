@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import logging
 from Bio.PDB import PDBList
@@ -133,4 +135,4 @@ def download_rna_pdbs(download_directory="downloaded_rna_pdbs", max_entries=20):
     logging.info("-----------------------")
 
 if __name__ == "__main__":
-    download_rna_pdbs(max_entries=200)
+    download_rna_pdbs(max_entries=400)

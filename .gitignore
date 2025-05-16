@@ -1,11 +1,21 @@
 # Ignore downloaded PDB files and directories
 
 downloaded_rna_pdbs/
+
 *.ent 
 *.pdb
+*.npy
 
 competition_data/
 
 competition/
 
 original_pdbs/
+
+npy_files/
+
+processed_pdbs/
+
+rna_sequences/
+
+co-intelligence.md

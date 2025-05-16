@@ -6,6 +6,13 @@ from Bio import PDB
 from Bio.PDB import PDBParser, PPBuilder, PDBIO, Structure, Model, Chain, Residue
 from Bio.PDB.Atom import Atom
 from pathlib import Path
+import logging
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 class PDBRNAProcessor:
     def __init__(self, original_dir: str = "original_pdbs", processed_dir: str = "processed_pdbs", fasta_dir: str = "rna_sequences"):
@@ -23,6 +30,15 @@ class PDBRNAProcessor:
         self.fasta_dir.mkdir(exist_ok=True)
         self.pdb_parser = PDBParser(QUIET=True)
         self.ppb = PPBuilder()
+        
+        # Statistics tracking
+        self.stats = {
+            "total_files": 0,
+            "no_rna_chains": 0,
+            "invalid_files": 0,
+            "processed_files": 0,
+            "chains_processed": 0
+        }
 
     def is_rna_chain(self, chain: Chain) -> bool:
         """Check if a chain contains RNA.
@@ -61,7 +77,7 @@ class PDBRNAProcessor:
         return ''.join(res.get_resname() for res in chain if res.get_resname() in ['A', 'U', 'G', 'C'])
 
     def process_pdb(self, pdb_path: str) -> List[str]:
-        """Process a PDB file to extract unique RNA chains and their atoms.
+        """Process a PDB file to extract RNA chains and their atoms.
         
         Args:
             pdb_path (str): Path to the PDB file
@@ -69,21 +85,24 @@ class PDBRNAProcessor:
         Returns:
             List[str]: List of paths to processed PDB files
         """
+        self.stats["total_files"] += 1
+        processed_files = []
+        
         try:
             structure = self.pdb_parser.get_structure('RNA', pdb_path)
-            processed_files = []
-            seen_sequences = set()
+            has_rna = False
             
             for model in structure:
                 for chain in model:
                     if not self.is_rna_chain(chain):
                         continue
-                        
-                    # Get sequence for deduplication
+                    
+                    has_rna = True
+                    # Get sequence for logging
                     seq = self.get_chain_sequence(chain)
-                    if not seq or seq in seen_sequences:
+                    if not seq:
+                        logging.warning(f"No sequence found in chain {chain.id} of {pdb_path}")
                         continue
-                    seen_sequences.add(seq)
                     
                     # Create a new structure for this chain
                     new_structure = Structure.Structure('RNA')
@@ -108,12 +127,19 @@ class PDBRNAProcessor:
                         io.set_structure(new_structure)
                         io.save(str(output_path))
                         processed_files.append(str(output_path))
+                        self.stats["chains_processed"] += 1
             
-            return processed_files
+            if not has_rna:
+                self.stats["no_rna_chains"] += 1
+                logging.info(f"No RNA chains found in {pdb_path}")
             
         except Exception as e:
-            print(f"Error processing PDB file {pdb_path}: {e}")
+            self.stats["invalid_files"] += 1
+            logging.error(f"Error processing PDB file {pdb_path}: {e}")
             return []
+        
+        self.stats["processed_files"] += len(processed_files)
+        return processed_files
 
     def extract_sequences_to_fasta(self) -> List[str]:
         """Extract RNA sequences from processed PDB files and save them as FASTA files.
@@ -124,7 +150,7 @@ class PDBRNAProcessor:
         fasta_files = []
         processed_files = list(self.processed_dir.glob("*.pdb"))
         
-        print(f"\nExtracting sequences from {len(processed_files)} processed PDB files...")
+        logging.info(f"\nExtracting sequences from {len(processed_files)} processed PDB files...")
         
         for pdb_path in processed_files:
             try:
@@ -146,10 +172,10 @@ class PDBRNAProcessor:
                         f.write(f"{sequence[i:i+60]}\n")
                 
                 fasta_files.append(str(fasta_path))
-                print(f"Created FASTA file: {fasta_path}")
+                logging.info(f"Created FASTA file: {fasta_path}")
                 
             except Exception as e:
-                print(f"Error extracting sequence from {pdb_path}: {e}")
+                logging.error(f"Error extracting sequence from {pdb_path}: {e}")
                 continue
         
         return fasta_files
@@ -161,25 +187,25 @@ def main():
     pdb_files = list(processor.original_dir.glob("*.pdb")) + list(processor.original_dir.glob("*.ent"))
     
     if not pdb_files:
-        print("No PDB files found in original_pdbs directory!")
+        logging.error("No PDB files found in original_pdbs directory!")
         return
         
-    print(f"Found {len(pdb_files)} PDB files to process")
+    logging.info(f"Found {len(pdb_files)} PDB files to process")
     
     # Process each PDB
     for pdb_path in pdb_files:
-        print(f"\nProcessing PDB: {pdb_path.name}")
-        print("-" * 50)
+        logging.info(f"\nProcessing PDB: {pdb_path.name}")
+        logging.info("-" * 50)
         
         # Process the PDB
         processed_files = processor.process_pdb(str(pdb_path))
         
         if not processed_files:
-            print(f"No RNA chains found in {pdb_path.name}")
+            logging.info(f"No RNA chains found in {pdb_path.name}")
         else:
-            print(f"Found {len(processed_files)} RNA chain(s):")
+            logging.info(f"Found {len(processed_files)} RNA chain(s):")
             for file_path in processed_files:
-                print(f"- {file_path}")
+                logging.info(f"- {file_path}")
                 
             # Print some basic statistics
             for file_path in processed_files:
@@ -188,13 +214,21 @@ def main():
                     chain = next(structure.get_chains())
                     num_residues = len(list(chain))
                     num_atoms = len(list(chain.get_atoms()))
-                    print(f"  File: {file_path} | Residues: {num_residues} | Atoms: {num_atoms} | Chain: {chain.id}")
+                    logging.info(f"  File: {file_path} | Residues: {num_residues} | Atoms: {num_atoms} | Chain: {chain.id}")
                 except Exception as e:
-                    print(f"Error analyzing {file_path}: {e}")
+                    logging.error(f"Error analyzing {file_path}: {e}")
     
     # Extract sequences to FASTA files
     fasta_files = processor.extract_sequences_to_fasta()
-    print(f"\nGenerated {len(fasta_files)} FASTA files in {processor.fasta_dir}")
+    logging.info(f"\nGenerated {len(fasta_files)} FASTA files in {processor.fasta_dir}")
+    
+    # Print final statistics
+    logging.info("\nProcessing Statistics:")
+    logging.info(f"Total files processed: {processor.stats['total_files']}")
+    logging.info(f"Files with no RNA chains: {processor.stats['no_rna_chains']}")
+    logging.info(f"Invalid files: {processor.stats['invalid_files']}")
+    logging.info(f"Total RNA chains processed: {processor.stats['chains_processed']}")
+    logging.info(f"Successfully processed files: {processor.stats['processed_files']}")
 
 if __name__ == "__main__":
     main() 
