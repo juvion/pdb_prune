@@ -6,6 +6,7 @@ from Bio.PDB import PDBParser
 from pathlib import Path
 from typing import List, Dict, Tuple
 import os
+import argparse
 
 class PDBToNumpyConverter:
     def __init__(self, processed_dir: str = "processed_pdbs", npy_dir: str = "npy_files"):
@@ -111,7 +112,19 @@ class PDBToNumpyConverter:
                 continue
 
 def main():
-    converter = PDBToNumpyConverter()
+    """Main function to run the PDB to NumPy converter."""
+    parser = argparse.ArgumentParser(description='Convert PDB files to NumPy arrays')
+    parser.add_argument('--input-dir', type=str, required=True,
+                      help='Directory containing PDB files')
+    parser.add_argument('--output-dir', type=str, default='npy_files',
+                      help='Directory to store NumPy files (default: npy_files)')
+    
+    args = parser.parse_args()
+    
+    converter = PDBToNumpyConverter(
+        processed_dir=args.input_dir,
+        npy_dir=args.output_dir
+    )
     converter.convert_all_pdbs()
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ downloaded_rna_pdbs/
 *.ent 
 *.pdb
 *.npy
+*.fasta
 
 competition_data/
 

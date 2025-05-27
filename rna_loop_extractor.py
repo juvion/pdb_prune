@@ -17,13 +17,17 @@ logging.basicConfig(
 )
 
 class RNALoopExtractor:
-    def __init__(self, distance_cutoff: float = 10.0):
+    def __init__(self, distance_cutoff: float = 10.0, min_loop_size: int = 3, max_loop_size: int = 20):
         """Initialize the RNA loop extractor.
         
         Args:
             distance_cutoff (float): Distance cutoff in Angstroms for considering residues as neighbors
+            min_loop_size (int): Minimum number of residues in a loop to be extracted
+            max_loop_size (int): Maximum number of residues in a loop to be extracted
         """
         self.distance_cutoff = distance_cutoff
+        self.min_loop_size = min_loop_size
+        self.max_loop_size = max_loop_size
         self.pdb_parser = PDBParser(QUIET=True)
         
     def get_base_atom(self, residue: BioResidue) -> Optional[BioAtom]:
@@ -208,88 +212,89 @@ class RNALoopExtractor:
                     break
             
             if not rna_chain:
-                logging.error(f"No RNA chain found in {pdb_path}")
+                logging.warning(f"No RNA chain found in {pdb_code}")
                 return []
             
-            # Find neighbors
+            # Find neighbors and identify loops
             neighbors = self.find_neighbors(rna_chain)
-            if not neighbors:
-                logging.error(f"No valid residues found in {pdb_path}")
-                return []
-            
-            # Identify loop residues
             loop_residues = self.identify_loop_residues(neighbors)
-            if not loop_residues:
-                logging.info(f"No loop residues found in {pdb_path}")
-                return []
+            continuous_loops = self.extract_continuous_loops(loop_residues)
             
-            # Extract continuous loops
-            loops = self.extract_continuous_loops(loop_residues)
-            if not loops:
-                logging.info(f"No continuous loops found in {pdb_path}")
-                return []
-            
-            # Create and save loop structures
-            output_files = []
+            # Get sequential residues for terminal check
             seq_residues = self.get_sequential_residues(rna_chain)
             last_residue_idx = len(seq_residues) - 1
             
-            for start_idx, end_idx in loops:
+            # Filter loops based on size
+            filtered_loops = []
+            for start, end in continuous_loops:
+                loop_size = end - start + 1
+                if self.min_loop_size <= loop_size <= self.max_loop_size:
+                    filtered_loops.append((start, end))
+            
+            # Extract and save loops
+            output_files = []
+            for start, end in filtered_loops:
                 # Get original residue numbers
-                start_res = seq_residues[start_idx][1]
-                end_res = seq_residues[end_idx][1]
+                start_res = seq_residues[start][1]
+                end_res = seq_residues[end][1]
                 start_num = start_res.get_id()[1]
                 end_num = end_res.get_id()[1]
                 
-                # Create loop structure
-                loop_structure = self.create_loop_structure(rna_chain, start_idx, end_idx)
-                
                 # Check if this is the last residue in the chain
-                is_terminal = end_idx == last_residue_idx
+                is_terminal = end == last_residue_idx
                 
-                # Save to file with 'T' suffix if it's a terminal fragment
+                # Create loop structure
+                loop_structure = self.create_loop_structure(rna_chain, start, end)
+                
+                # Save to file with residue range and 'T' suffix if terminal
                 suffix = 'T' if is_terminal else ''
-                output_path = os.path.join(output_dir, f"{pdb_code}_{start_num}-{end_num}{suffix}.pdb")
+                output_file = os.path.join(output_dir, f"{pdb_code}_{start_num}-{end_num}{suffix}.pdb")
                 io = PDBIO()
                 io.set_structure(loop_structure)
-                io.save(output_path)
-                output_files.append(output_path)
-                
-                logging.info(f"Saved loop fragment {start_num}-{end_num}{suffix} to {output_path}")
+                io.save(output_file)
+                output_files.append(output_file)
+                logging.info(f"Extracted loop from {pdb_code} (residues {start_num}-{end_num}{suffix})")
             
             return output_files
             
         except Exception as e:
-            logging.error(f"Error processing {pdb_path}: {e}")
+            logging.error(f"Error processing {pdb_code}: {str(e)}")
             return []
 
 def main():
-    # Example usage
-    extractor = RNALoopExtractor()
+    """Main function to run the RNA loop extractor."""
+    import argparse
     
-    # Process all PDB files in the processed_pdbs directory
-    pdb_dir = "processed_pdbs"
-    output_dir = "extracted_loops"
+    parser = argparse.ArgumentParser(description='Extract RNA loop fragments from PDB files')
+    parser.add_argument('--pdb-dir', type=str, required=True,
+                      help='Directory containing PDB files')
+    parser.add_argument('--output-dir', type=str, default='extracted_loops',
+                      help='Directory to save extracted loops (default: extracted_loops)')
+    parser.add_argument('--distance-cutoff', type=float, default=10.0,
+                      help='Distance cutoff in Angstroms (default: 10.0)')
+    parser.add_argument('--min-loop-size', type=int, default=3,
+                      help='Minimum number of residues in a loop (default: 3)')
+    parser.add_argument('--max-loop-size', type=int, default=20,
+                      help='Maximum number of residues in a loop (default: 20)')
     
-    if not os.path.exists(pdb_dir):
-        logging.error(f"Directory {pdb_dir} not found!")
-        return
+    args = parser.parse_args()
     
-    pdb_files = list(Path(pdb_dir).glob("*.pdb"))
-    if not pdb_files:
-        logging.error(f"No PDB files found in {pdb_dir}")
-        return
+    extractor = RNALoopExtractor(
+        distance_cutoff=args.distance_cutoff,
+        min_loop_size=args.min_loop_size,
+        max_loop_size=args.max_loop_size
+    )
     
-    logging.info(f"Found {len(pdb_files)} PDB files to process")
-    
+    # Process all PDB files in the directory
+    pdb_files = [f for f in os.listdir(args.pdb_dir) if f.endswith('.pdb')]
     total_loops = 0
-    for pdb_path in pdb_files:
-        logging.info(f"\nProcessing {pdb_path.name}")
-        output_files = extractor.extract_loops(str(pdb_path), output_dir)
-        total_loops += len(output_files)
-        logging.info(f"Extracted {len(output_files)} loop fragments")
     
-    logging.info(f"\nProcessing complete. Extracted {total_loops} loop fragments in total.")
+    for pdb_file in pdb_files:
+        pdb_path = os.path.join(args.pdb_dir, pdb_file)
+        extracted_files = extractor.extract_loops(pdb_path, args.output_dir)
+        total_loops += len(extracted_files)
+    
+    logging.info(f"Extracted {total_loops} loops from {len(pdb_files)} PDB files")
 
 if __name__ == "__main__":
     main() 

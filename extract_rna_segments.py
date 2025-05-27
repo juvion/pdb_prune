@@ -4,6 +4,7 @@ import os
 import sys
 import logging
 import random
+import argparse
 from pathlib import Path
 from typing import List, Tuple, Dict, Set
 from Bio import PDB
@@ -20,18 +21,20 @@ logging.basicConfig(
 )
 
 class RNAExtractor:
-    def __init__(self, input_dir: str, generation_id: str, max_length: int = 25, 
+    def __init__(self, input_dir: str, generation_id: str, min_length: int = 5, max_length: int = 20, 
                  num_extractions_per_chain: int = 5):
         """Initialize the RNA extractor.
         
         Args:
             input_dir (str): Directory containing input PDB files
             generation_id (str): Unique identifier for this extraction run
+            min_length (int): Minimum length of extracted RNA segments
             max_length (int): Maximum length of extracted RNA segments
             num_extractions_per_chain (int): Number of segments to extract per chain
         """
         self.input_dir = Path(input_dir)
         self.generation_id = generation_id
+        self.min_length = min_length
         self.max_length = max_length
         self.num_extractions_per_chain = num_extractions_per_chain
         
@@ -162,7 +165,8 @@ class RNAExtractor:
             Tuple[PDB.Structure.Structure, str, int, int]: (structure, sequence, start_res, end_res)
         """
         # Filter segments by length
-        valid_segments = [seg for seg in segments if seg[1] - seg[0] + 1 <= self.max_length]
+        valid_segments = [seg for seg in segments 
+                         if self.min_length <= seg[1] - seg[0] + 1 <= self.max_length]
         if not valid_segments:
             return None, "", 0, 0
         
@@ -272,17 +276,28 @@ class RNAExtractor:
 
 def main():
     """Main function to run the RNA extractor."""
-    if len(sys.argv) < 3:
-        print("Usage: extract_rna_segments.py <input_directory> <generation_id> [max_length] [num_extractions_per_chain]")
-        sys.exit(1)
-        
-    input_dir = sys.argv[1]
-    generation_id = sys.argv[2]
-    max_length = int(sys.argv[3]) if len(sys.argv) > 3 else 25
-    num_extractions = int(sys.argv[4]) if len(sys.argv) > 4 else 5
+    parser = argparse.ArgumentParser(description='Extract RNA segments from PDB files')
+    parser.add_argument('--input-dir', type=str, required=True,
+                      help='Directory containing input PDB files')
+    parser.add_argument('--generation-id', type=str, required=True,
+                      help='Unique identifier for this extraction run')
+    parser.add_argument('--min-length', type=int, default=5,
+                      help='Minimum length of extracted segments (default: 5)')
+    parser.add_argument('--max-length', type=int, default=20,
+                      help='Maximum length of extracted segments (default: 20)')
+    parser.add_argument('--num-extractions', type=int, default=5,
+                      help='Number of segments to extract per chain (default: 5)')
+    
+    args = parser.parse_args()
     
     try:
-        extractor = RNAExtractor(input_dir, generation_id, max_length, num_extractions)
+        extractor = RNAExtractor(
+            args.input_dir,
+            args.generation_id,
+            min_length=args.min_length,
+            max_length=args.max_length,
+            num_extractions_per_chain=args.num_extractions
+        )
         extractor.process()
     except Exception as e:
         logging.error(f"Error: {e}")
