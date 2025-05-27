@@ -1,97 +1,172 @@
-# PDB RNA Structure Processor
+# RNA Structure Processing Pipeline
 
-A Python tool for processing RNA structures from PDB files, extracting sequences, and converting them to various formats.
+A comprehensive toolkit for processing and analyzing RNA structures from the Protein Data Bank (PDB).
 
-## Features
+## Overview
 
-- Process PDB files containing RNA structures
-- Extract RNA sequences and save them as FASTA files
-- Convert PDB structures to NumPy arrays for machine learning applications
-- Handle both `.pdb` and `.ent` file formats
-- Support for multiple RNA chains in a single structure
-- Automatic handling of missing atoms with NaN values
-
-## Requirements
-
-- Python 3.6+
-- Biopython
-- NumPy
-- Requests
+This pipeline provides tools for:
+- Downloading and processing RNA structures from PDB
+- Converting between PDB and NumPy formats
+- Extracting RNA segments and loops
+- Generating FASTA sequences
+- Analyzing RNA structure properties
 
 ## Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/pdb_prune.git
-cd pdb_prune
-```
+### Prerequisites
+- Python 3.8+
+- pip (Python package installer)
 
-2. Install the required packages:
+### Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-## Usage
-
-### 1. Processing PDB Files
-
-Place your PDB files (`.pdb` or `.ent`) in the `original_pdbs` directory. The script will:
-- Extract RNA chains
-- Save processed structures in `processed_pdbs`
-- Generate FASTA sequences in `rna_sequences`
-- Create NumPy arrays in `npy_files`
-
-Run the processing script:
-```bash
-python pdb_rna_processor.py
-```
-
-### 2. Converting to NumPy Arrays
-
-The script will automatically convert processed PDB files to NumPy arrays with the following structure:
-- Shape: `(sequence_length, 7, 3)`
-- 7 atoms per residue: P, O5', C5', C4', C3', O3', and N1/N9
-- Missing atoms are filled with NaN values
-
-Run the conversion script:
-```bash
-python pdb_to_npy.py
-```
+Required packages:
+- biopython
+- numpy
+- pandas
+- matplotlib
+- jupyter
+- requests
 
 ## Directory Structure
 
 ```
 pdb_prune/
-├── original_pdbs/     # Input PDB files
-├── processed_pdbs/    # Processed RNA structures
-├── rna_sequences/     # FASTA sequence files
-├── npy_files/        # NumPy array files
-├── pdb_rna_processor.py
-├── pdb_to_npy.py
-└── requirements.txt
+├── README.md
+├── requirements.txt
+├── tutorial.ipynb
+├── utils/
+│   ├── __init__.py
+│   ├── download_pdb.py
+│   ├── pdb_to_npy.py
+│   ├── npy_to_pdb.py
+│   ├── extract_loops.py
+│   ├── extract_rna_segments.py
+│   └── extract_sequence.py
+├── data/
+│   ├── raw_pdbs/
+│   ├── processed_pdbs/
+│   └── npy_files/
+└── examples/
+    └── output/
 ```
 
-## File Formats
+## Usage Examples
 
-### Processed PDB Files
-- Located in `processed_pdbs/`
-- Named as `pdb{id}_{chain}.pdb`
-- Contain only RNA chains with specified atoms
+### 1. Downloading PDB Files
+```python
+from utils.download_pdb import PDBDownloader
 
-### FASTA Files
-- Located in `rna_sequences/`
-- Named as `pdb{id}_{chain}.fasta`
-- Contain RNA sequences in FASTA format
+# Download specific PDB IDs
+downloader = PDBDownloader()
+downloader.download_pdbs(['1ABC', '2XYZ'])
+```
+
+### 2. Converting PDB to NumPy
+```python
+from utils.pdb_to_npy import PDBToNumpyConverter
+
+# Convert PDB files to NumPy arrays
+converter = PDBToNumpyConverter(
+    processed_dir="processed_pdbs",
+    npy_dir="npy_files"
+)
+converter.convert_all_pdbs()
+```
+
+### 3. Extracting RNA Loops
+```python
+from utils.extract_loops import LoopExtractor
+
+# Extract loops with 10Å cutoff
+extractor = LoopExtractor(
+    input_dir="processed_pdbs",
+    output_dir="extracted_loops",
+    distance_cutoff=10.0
+)
+extractor.process()
+```
+
+### 4. Extracting RNA Segments
+```python
+from utils.extract_rna_segments import RNAExtractor
+
+# Extract segments of length 5-20
+extractor = RNAExtractor(
+    input_dir="processed_pdbs",
+    generation_id="run1",
+    min_length=5,
+    max_length=20,
+    num_extractions_per_chain=5
+)
+extractor.process()
+```
+
+### 5. Generating FASTA Files
+```python
+from utils.extract_sequence import SequenceExtractor
+
+# Extract sequences from PDB files
+extractor = SequenceExtractor(
+    pdb_dir="processed_pdbs",
+    output_dir="sequences"
+)
+extractor.process()
+```
+
+## Input/Output Formats
+
+### PDB Files
+- Input: Standard PDB format files
+- Output: Processed PDB files with RNA chains only
 
 ### NumPy Arrays
-- Located in `npy_files/`
-- Named as `pdb{id}_{chain}.npy`
-- Shape: `(sequence_length, 7, 3)`
-- Atom order: P, O5', C5', C4', C3', O3', N1/N9
+- Shape: (sequence_length, 7, 3)
+- Contains coordinates for: P, O5', C5', C4', C3', O3', and base connecting atom (N1/N9)
+
+### FASTA Files
+- Standard FASTA format
+- Header format: `>PDB_ID_chain description`
+
+## Common Use Cases
+
+1. **RNA Structure Analysis**
+   - Download RNA structures
+   - Convert to NumPy arrays for analysis
+   - Extract specific regions of interest
+
+2. **Loop Detection**
+   - Identify and extract RNA loops
+   - Analyze loop properties
+   - Generate loop datasets
+
+3. **Sequence Analysis**
+   - Extract RNA sequences
+   - Generate FASTA files
+   - Analyze sequence patterns
+
+## Best Practices
+
+1. **File Organization**
+   - Keep raw and processed files separate
+   - Use consistent naming conventions
+   - Maintain backup copies of important data
+
+2. **Error Handling**
+   - Check file existence before processing
+   - Validate input formats
+   - Handle missing atoms gracefully
+
+3. **Performance**
+   - Process files in batches
+   - Use appropriate data structures
+   - Monitor memory usage
 
 ## Contributing
 
-Feel free to submit issues and enhancement requests!
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
