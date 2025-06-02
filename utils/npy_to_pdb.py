@@ -153,27 +153,27 @@ class NumpyToPDBConverter:
         except Exception as e:
             logging.error(f"Error converting {npy_path}: {e}")
             return False
-    
+
     def convert_all_npy(self) -> None:
         """Convert all NumPy files in the input directory to PDB format."""
-        # Get all NPY files
+    # Get all NPY files
         npy_files = list(self.npy_dir.glob("*.npy"))
-        
-        if not npy_files:
+    
+    if not npy_files:
             logging.error(f"No NPY files found in {self.npy_dir}")
-            return
-        
-        logging.info(f"Found {len(npy_files)} NPY files to process")
-        
-        # Process each file
-        success_count = 0
-        for npy_path in npy_files:
-            # Get corresponding FASTA file
+        return
+    
+    logging.info(f"Found {len(npy_files)} NPY files to process")
+    
+    # Process each file
+    success_count = 0
+    for npy_path in npy_files:
+        # Get corresponding FASTA file
             fasta_path = Path("sequences") / f"{npy_path.stem}.fasta"
-            if not fasta_path.exists():
-                logging.warning(f"No matching FASTA file found for {npy_path.name}")
-                continue
-            
+        if not fasta_path.exists():
+            logging.warning(f"No matching FASTA file found for {npy_path.name}")
+            continue
+        
             # Convert file
             if self.convert_single_file(str(npy_path), str(fasta_path)):
                 success_count += 1

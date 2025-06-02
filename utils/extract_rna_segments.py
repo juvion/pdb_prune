@@ -39,7 +39,7 @@ class RNAExtractor:
         
         # Create output directories
         if generation_id:
-            self.output_dir = Path(f"extracted_rna_segments_{generation_id}")
+        self.output_dir = Path(f"extracted_rna_segments_{generation_id}")
         else:
             self.output_dir = Path("extracted_rna_segments")
             
@@ -195,28 +195,28 @@ class RNAExtractor:
         # Extract segments
         extracted_segments = []
         for start_res, end_res in selected_segments:
-            # Create new structure
-            new_structure = PDB.Structure.Structure("extracted")
-            new_model = PDB.Model.Model(0)
-            new_structure.add(new_model)
-            
-            # Extract residues for the segment
-            segment_residues = []
-            for chain in chain_group:
-                for residue in chain:
-                    res_num = residue.get_id()[1]
-                    if start_res <= res_num <= end_res:
-                        segment_residues.append(residue)
-            
-            # Create new chain and add residues
-            new_chain = PDB.Chain.Chain("A")
-            for residue in segment_residues:
-                new_chain.add(residue.copy())
-            new_model.add(new_chain)
-            
-            # Get sequence
-            sequence = self.get_rna_sequence(segment_residues)
-            
+        # Create new structure
+        new_structure = PDB.Structure.Structure("extracted")
+        new_model = PDB.Model.Model(0)
+        new_structure.add(new_model)
+        
+        # Extract residues for the segment
+        segment_residues = []
+        for chain in chain_group:
+            for residue in chain:
+                res_num = residue.get_id()[1]
+                if start_res <= res_num <= end_res:
+                    segment_residues.append(residue)
+        
+        # Create new chain and add residues
+        new_chain = PDB.Chain.Chain("A")
+        for residue in segment_residues:
+            new_chain.add(residue.copy())
+        new_model.add(new_chain)
+        
+        # Get sequence
+        sequence = self.get_rna_sequence(segment_residues)
+        
             extracted_segments.append((new_structure, sequence, start_res, end_res))
         
         return extracted_segments
@@ -249,27 +249,27 @@ class RNAExtractor:
                     # Check if segment ends at the last residue
                     is_terminal = any(end_res == seg[1] for seg in segments)
                     
-                    # Generate output filenames
+                        # Generate output filenames
                     range_str = f"{start_res}-{end_res}{'T' if is_terminal else ''}"
                     base_name = f"{pdb_id}_{chain_ids}_{range_str}"
                     
                     pdb_filename = f"{base_name}.pdb"
                     fasta_filename = f"{base_name}.fasta"
                     
-                    pdb_path = self.pdb_output_dir / pdb_filename
+                        pdb_path = self.pdb_output_dir / pdb_filename
                     fasta_path = self.fasta_output_dir / fasta_filename
-                    
-                    # Save PDB file
-                    self.io.set_structure(structure)
-                    self.io.save(str(pdb_path))
-                    
+                        
+                        # Save PDB file
+                        self.io.set_structure(structure)
+                        self.io.save(str(pdb_path))
+                        
                     # Save FASTA file
                     fasta_header = f">{pdb_id}|{chain_ids}|{range_str}|Length={len(sequence)}"
-                    record = SeqRecord(sequence, id=fasta_header, description="")
+                        record = SeqRecord(sequence, id=fasta_header, description="")
                     SeqIO.write(record, fasta_path, "fasta")
-                    
-                    self.stats['extracted_segments'] += 1
-                    logging.info(f"Extracted segment from {pdb_id} chain {chain_ids}: "
+                        
+                        self.stats['extracted_segments'] += 1
+                        logging.info(f"Extracted segment from {pdb_id} chain {chain_ids}: "
                                f"{range_str} (length={len(sequence)})")
             
             self.stats['processed_pdbs'] += 1

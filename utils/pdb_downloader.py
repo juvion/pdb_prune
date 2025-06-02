@@ -253,4 +253,4 @@ def download_rna_pdbs(download_directory="downloaded_rna_pdbs", max_entries=20):
     logging.info("-----------------------")
 
 if __name__ == "__main__":
-    download_rna_pdbs(max_entries=400)
+    download_rna_pdbs(max_entries=1200)

@@ -7,6 +7,7 @@ from Bio.PDB import PDBParser, PPBuilder, PDBIO, Structure, Model, Chain, Residu
 from Bio.PDB.Atom import Atom
 from pathlib import Path
 import logging
+import argparse
 
 # Set up logging
 logging.basicConfig(
@@ -181,13 +182,27 @@ class PDBRNAProcessor:
         return fasta_files
 
 def main():
-    processor = PDBRNAProcessor()
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Process PDB files to extract RNA chains and sequences.')
+    parser.add_argument('--original-dir', type=str, default="original_pdbs",
+                      help='Directory containing original PDB files')
+    parser.add_argument('--processed-dir', type=str, default="processed_pdbs",
+                      help='Directory to store processed PDB files')
+    parser.add_argument('--fasta-dir', type=str, default="rna_sequences",
+                      help='Directory to store RNA sequences in FASTA format')
+    args = parser.parse_args()
     
-    # Process all PDB files in the original_pdbs directory
+    processor = PDBRNAProcessor(
+        original_dir=args.original_dir,
+        processed_dir=args.processed_dir,
+        fasta_dir=args.fasta_dir
+    )
+    
+    # Process all PDB files in the original directory
     pdb_files = list(processor.original_dir.glob("*.pdb")) + list(processor.original_dir.glob("*.ent"))
     
     if not pdb_files:
-        logging.error("No PDB files found in original_pdbs directory!")
+        logging.error(f"No PDB files found in {args.original_dir} directory!")
         return
         
     logging.info(f"Found {len(pdb_files)} PDB files to process")
