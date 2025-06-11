@@ -116,15 +116,27 @@ class PDBDownloader:
             return
         
         try:
-            # Download PDB file
+            # First try PDB format
             url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
             response = requests.get(url)
-            response.raise_for_status()
             
-            # Save to file
-            with open(output_file, 'w') as f:
-                f.write(response.text)
-            print(f"Downloaded: {output_file}")
+            # If PDB format fails, try mmCIF format
+            if response.status_code == 404:
+                url = f"https://files.rcsb.org/download/{pdb_id}.cif"
+                response = requests.get(url)
+                response.raise_for_status()
+                
+                # Save as CIF file
+                output_file = self.output_dir / f"{pdb_id}.cif"
+                with open(output_file, 'w') as f:
+                    f.write(response.text)
+                print(f"Downloaded: {output_file}")
+            else:
+                response.raise_for_status()
+                # Save as PDB file
+                with open(output_file, 'w') as f:
+                    f.write(response.text)
+                print(f"Downloaded: {output_file}")
             
         except requests.exceptions.RequestException as e:
             print(f"Error downloading {pdb_id}: {e}")
