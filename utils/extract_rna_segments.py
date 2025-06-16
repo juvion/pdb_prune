@@ -22,7 +22,7 @@ logging.basicConfig(
 
 class RNAExtractor:
     def __init__(self, input_dir: str, min_length: int = 5, max_length: int = 20, 
-                 coverage_rate: float = 0.1, generation_id: str = None):
+                 coverage_rate: float = 0.1, generation_id: str = None, output_dir: str = None):
         """Initialize the RNA segment extractor.
         
         Args:
@@ -31,6 +31,7 @@ class RNAExtractor:
             max_length (int): Maximum length of extracted RNA segments
             coverage_rate (float): Minimum sampling coverage rate (0-1)
             generation_id (str, optional): Unique identifier for this extraction run
+            output_dir (str, optional): Explicit output directory path
         """
         self.input_dir = Path(input_dir)
         self.min_length = min_length
@@ -38,7 +39,9 @@ class RNAExtractor:
         self.coverage_rate = coverage_rate
         
         # Create output directories
-        if generation_id:
+        if output_dir:
+            self.output_dir = Path(output_dir)
+        elif generation_id:
             self.output_dir = Path(f"extracted_rna_segments_{generation_id}")
         else:
             self.output_dir = Path("extracted_rna_segments")
@@ -173,24 +176,29 @@ class RNAExtractor:
         Returns:
             List[Tuple[PDB.Structure.Structure, str, int, int]]: List of (structure, sequence, start_res, end_res)
         """
-        # Filter segments by length
-        valid_segments = [seg for seg in segments 
-                         if self.min_length <= seg[1] - seg[0] + 1 <= self.max_length]
-        if not valid_segments:
-            return []
+        logging.info(f"Processing segments with min_length={self.min_length}, max_length={self.max_length}")
+        logging.info(f"Input segments: {segments}")
         
         # Generate all possible segments
         all_possible_segments = []
-        for start_res, end_res in valid_segments:
+        for start_res, end_res in segments:
+            # For each segment, generate all possible sub-segments of valid lengths
             for length in range(self.min_length, min(self.max_length + 1, end_res - start_res + 2)):
                 for start in range(start_res, end_res - length + 2):
                     all_possible_segments.append((start, start + length - 1))
+        
+        logging.info(f"Generated {len(all_possible_segments)} possible segments")
+        if not all_possible_segments:
+            logging.warning("No possible segments generated")
+            return []
         
         # Randomly sample without replacement
         if len(all_possible_segments) <= num_samples:
             selected_segments = all_possible_segments
         else:
             selected_segments = random.sample(all_possible_segments, num_samples)
+        
+        logging.info(f"Selected {len(selected_segments)} segments for extraction")
         
         # Extract segments
         extracted_segments = []
@@ -219,6 +227,7 @@ class RNAExtractor:
             
             extracted_segments.append((new_structure, sequence, start_res, end_res))
         
+        logging.info(f"Successfully extracted {len(extracted_segments)} segments")
         return extracted_segments
 
     def process_pdb(self, pdb_file: Path) -> None:
@@ -313,6 +322,8 @@ def main():
                       help='Minimum sampling coverage rate (0-1)')
     parser.add_argument('--generation-id', type=str,
                       help='Optional identifier for this extraction run')
+    parser.add_argument('--output-dir', type=str,
+                      help='Explicit output directory path')
     
     args = parser.parse_args()
     
@@ -330,7 +341,8 @@ def main():
             min_length=args.min_length,
             max_length=args.max_length,
             coverage_rate=args.coverage_rate,
-            generation_id=args.generation_id
+            generation_id=args.generation_id,
+            output_dir=args.output_dir
         )
         extractor.process()
     except Exception as e:

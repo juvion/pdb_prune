@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import pandas as pd
+import argparse
 
 def analyze_sequence_lengths(fasta_dir: str = "rna_sequences", bin_size: int = 10):
     """
@@ -21,15 +22,28 @@ def analyze_sequence_lengths(fasta_dir: str = "rna_sequences", bin_size: int = 1
         print(f"No FASTA files found in {fasta_dir}")
         return
     
-    # Collect sequence lengths
+    # Collect sequence lengths and file information
     lengths = []
+    file_lengths = []  # List to store (filename, length) pairs
+    
     for fasta_file in fasta_files:
         for record in SeqIO.parse(fasta_file, "fasta"):
-            lengths.append(len(record.seq))
+            seq_length = len(record.seq)
+            lengths.append(seq_length)
+            file_lengths.append({
+                'filename': fasta_file.name,
+                'sequence_id': record.id,
+                'length': seq_length
+            })
     
     if not lengths:
         print("No sequences found in FASTA files")
         return
+    
+    # Save individual file lengths to CSV
+    file_lengths_df = pd.DataFrame(file_lengths)
+    file_lengths_df.to_csv('individual_sequence_lengths.csv', index=False)
+    print("\nIndividual sequence lengths saved to 'individual_sequence_lengths.csv'")
     
     # Calculate statistics
     lengths = np.array(lengths)
@@ -108,5 +122,16 @@ def analyze_sequence_lengths(fasta_dir: str = "rna_sequences", bin_size: int = 1
     print("\nLength Distribution Table:")
     print(distribution_df.to_string(index=False))
 
+def main():
+    parser = argparse.ArgumentParser(description='Analyze RNA sequence length distribution from FASTA files')
+    parser.add_argument('--fasta-dir', type=str, required=True,
+                      help='Directory containing input FASTA files')
+    parser.add_argument('--bin-size', type=int, default=10,
+                      help='Size of bins for length distribution (default: 10)')
+    
+    args = parser.parse_args()
+    
+    analyze_sequence_lengths(fasta_dir=args.fasta_dir, bin_size=args.bin_size)
+
 if __name__ == "__main__":
-    analyze_sequence_lengths(bin_size=10) 
+    main() 
