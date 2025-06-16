@@ -26,3 +26,29 @@ processed_pdbs/
 rna_sequences/
 
 co-intelligence.md
+
+# Large files
+data/downloaded_rna_pdbs.tar.gz
+*.tar.gz
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+.env/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
