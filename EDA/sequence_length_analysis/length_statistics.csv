@@ -1,0 +1,2 @@
+total_sequences,min_length,max_length,mean_length,median_length,std_length,q25_percentile,q75_percentile,iqr,skewness,kurtosis
+2317,1,4417,573.5084160552439,76.0,915.3771780594955,26.0,969.0,943.0,1.5993887426631104,1.325493744422774
