@@ -9,7 +9,7 @@ downloaded_rna_pdbs/
 *.cif
 *.ent
 
-*pdb*/
+
 
 data/
 
