@@ -18,23 +18,8 @@ from tqdm import tqdm
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Unified plot style settings
-plt.rcParams.update({
-    "font.family": "DejaVu Sans",
-    "axes.titlesize": 18,
-    "axes.labelsize": 15,
-    "xtick.labelsize": 13,
-    "ytick.labelsize": 13,
-    "legend.fontsize": 13,
-    "figure.figsize": (8, 6),
-    "axes.grid": True,
-    "grid.alpha": 0.3,
-    "axes.facecolor": "white",
-    "savefig.dpi": 300,
-    "lines.linewidth": 2,
-})
-
-sns.set_theme(style="whitegrid", palette="tab10")
+plt.style.use('seaborn')
+sns.set_palette("husl")
 
 def list_npy_files(coords_dir: str):
     """
@@ -86,23 +71,19 @@ def plot_nan_histogram(nan_stats_df: pd.DataFrame, output_dir: str):
     """
     Plot a histogram of NaN counts per file.
     """
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
     plt.figure(figsize=(8, 5))
-    sns.histplot(nan_stats_df['nan_count'], bins=50, kde=False, color=None, palette="tab10")
+    sns.histplot(nan_stats_df['nan_count'], bins=50, kde=False, color='skyblue')
     plt.xlabel('NaN Count per File')
     plt.ylabel('Number of Files')
     plt.title('Histogram of NaN Counts per Coordinate File')
     plt.tight_layout()
-    plt.savefig(output_path / 'nan_count_histogram.png', dpi=300)
+    plt.savefig(Path(output_dir) / 'nan_count_histogram.png', dpi=300)
     plt.close()
 
 def plot_nan_heatmap(nan_positions_arr: np.ndarray, output_dir: str):
     """
     Plot a heatmap showing NaN positions across all files.
     """
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
     if nan_positions_arr.size == 0:
         logger.warning("No NaN position data to plot heatmap.")
         return
@@ -117,7 +98,7 @@ def plot_nan_heatmap(nan_positions_arr: np.ndarray, output_dir: str):
     plt.xlabel('Atom Index')
     plt.ylabel('File Index')
     plt.tight_layout()
-    plt.savefig(output_path / 'nan_positions_heatmap.png', dpi=300)
+    plt.savefig(Path(output_dir) / 'nan_positions_heatmap.png', dpi=300)
     plt.close()
 
 def save_results(nan_stats_df: pd.DataFrame, output_dir: str):

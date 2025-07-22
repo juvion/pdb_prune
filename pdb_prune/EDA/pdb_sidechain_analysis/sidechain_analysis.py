@@ -18,23 +18,8 @@ from tqdm import tqdm
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Unified plot style settings
-plt.rcParams.update({
-    "font.family": "DejaVu Sans",
-    "axes.titlesize": 18,
-    "axes.labelsize": 15,
-    "xtick.labelsize": 13,
-    "ytick.labelsize": 13,
-    "legend.fontsize": 13,
-    "figure.figsize": (8, 6),
-    "axes.grid": True,
-    "grid.alpha": 0.3,
-    "axes.facecolor": "white",
-    "savefig.dpi": 300,
-    "lines.linewidth": 2,
-})
-
-sns.set_theme(style="whitegrid", palette="tab10")
+plt.style.use('seaborn')
+sns.set_palette("husl")
 
 # List of standard RNA side chain atom names (for nucleotides)
 # For RNA, side chains are the base atoms (not the backbone: P, O5', C5', C4', C3', O3', etc.)
@@ -99,7 +84,7 @@ def plot_side_chain_histogram(stats_df: pd.DataFrame, output_dir: str):
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     plt.figure(figsize=(8, 5))
-    sns.histplot(stats_df['side_chain_count'], bins=50, color=None, palette="tab10")
+    sns.histplot(stats_df['side_chain_count'], bins=50, color='skyblue')
     plt.xlabel('Side Chain Atom Count')
     plt.ylabel('Number of PDB Files')
     plt.title('Histogram of Side Chain Atom Counts')
@@ -114,7 +99,7 @@ def plot_side_chain_vs_residues(stats_df: pd.DataFrame, output_dir: str):
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     plt.figure(figsize=(8, 6))
-    sns.scatterplot(x='n_residues', y='side_chain_count', data=stats_df, alpha=0.7, palette="tab10")
+    sns.scatterplot(x='n_residues', y='side_chain_count', data=stats_df, alpha=0.7)
     plt.xlabel('Number of Residues')
     plt.ylabel('Side Chain Atom Count')
     plt.title('Side Chain Atom Count vs. Number of Residues')
@@ -126,31 +111,13 @@ def plot_unique_side_chain_histogram(stats_df: pd.DataFrame, output_dir: str):
     """
     Plot a histogram of the number of unique RNA side chains per PDB file.
     """
-    import seaborn as sns
-    sns.set_theme(style="whitegrid", palette="tab10")
-    import matplotlib as mpl
-    plt.rcParams.update({
-        "font.family": "DejaVu Sans",
-        "axes.titlesize": 23,  # Title font size
-        "axes.labelsize": 19,  # Label font size
-        "xtick.labelsize": 17,
-        "ytick.labelsize": 17,
-        "legend.fontsize": 17,
-        "figure.figsize": (8, 6),
-        "axes.grid": True,
-        "grid.alpha": 0.3,
-        "axes.facecolor": "white",
-        "savefig.dpi": 300,
-        "lines.linewidth": 2,
-    })
-
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     plt.figure(figsize=(8, 5))
-    sns.histplot(stats_df['n_unique_side_chains'], bins=20, color=None, palette="tab10")
-    plt.xlabel('Number of Unique RNA Side Chains')
-    plt.ylabel('Number of PDBs')
-    plt.title('Unique RNA Side Chains per PDB')
+    sns.histplot(stats_df['n_unique_side_chains'], bins=20, color='purple')
+    plt.xlabel('Number of Unique RNA Side Chains (Residue Types)')
+    plt.ylabel('Number of PDB Files')
+    plt.title('Distribution of Unique RNA Side Chains per PDB')
     plt.tight_layout()
     plt.savefig(output_path / 'unique_side_chain_histogram.png', dpi=300)
     plt.close()

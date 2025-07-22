@@ -145,93 +145,6 @@ def calculate_kurtosis(data: np.ndarray) -> float:
     return np.mean(((data - mean) / std) ** 4) - 3
 
 
-def create_length_vs_gc_plot(sequences_df: pd.DataFrame, output_path: Path):
-    """Create scatter plot of length vs GC content.
-    """
-    import seaborn as sns
-    sns.set_theme(style="whitegrid", palette="tab10")
-    import matplotlib as mpl
-    plt.rcParams.update({
-        "font.family": "DejaVu Sans",
-        "axes.titlesize": 23,  # Title font size
-        "axes.labelsize": 19,  # Label font size
-        "xtick.labelsize": 17,
-        "ytick.labelsize": 17,
-        "legend.fontsize": 17,
-        "figure.figsize": (8, 6),
-        "axes.grid": True,
-        "grid.alpha": 0.3,
-        "axes.facecolor": "white",
-        "savefig.dpi": 300,
-        "lines.linewidth": 2,
-    })
-
-    plt.figure(figsize=(8, 6))
-    palette = plt.get_cmap('tab10')
-    color = palette(0)
-    plt.scatter(sequences_df['length'], sequences_df['gc_content'], 
-               alpha=0.6, s=20, color=color)
-    plt.xlabel('Sequence Length')
-    plt.ylabel('GC Content (%)')
-    plt.title('Sequence Length vs GC Content')
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(output_path / 'length_vs_gc_content.png', dpi=300, bbox_inches='tight')
-    plt.close()
-
-
-def create_length_distribution_by_category(sequences_df: pd.DataFrame, output_path: Path):
-    """
-    Create length distribution categorized by length ranges.
-    """
-    import seaborn as sns
-    sns.set_theme(style="whitegrid", palette="tab10")
-    import matplotlib as mpl
-    plt.rcParams.update({
-        "font.family": "DejaVu Sans",
-        "axes.titlesize": 23,  # Title font size
-        "axes.labelsize": 19,  # Label font size
-        "xtick.labelsize": 17,
-        "ytick.labelsize": 17,
-        "legend.fontsize": 17,
-        "figure.figsize": (8, 6),
-        "axes.grid": True,
-        "grid.alpha": 0.3,
-        "axes.facecolor": "white",
-        "savefig.dpi": 300,
-        "lines.linewidth": 2,
-    })
-
-    # Define length categories
-    sequences_df['length_category'] = pd.cut(
-        sequences_df['length'], 
-        bins=[0, 50, 100, 200, np.inf],
-        labels=['0-50', '51-100', '101-200', '>200']
-    )
-    plt.figure(figsize=(8, 6))
-    category_counts = sequences_df['length_category'].value_counts().sort_index()
-    palette = plt.get_cmap('tab10')
-    color = palette(0)  # Use the first color from tab10 (Tableau 10 blue)
-    bars = plt.bar(
-        range(len(category_counts)),
-        category_counts.values,
-        color=color,
-        alpha=0.7
-    )
-    plt.xlabel('Length Category')
-    plt.ylabel('Number of Sequences')
-    plt.title('Sequence Distribution by Length Category')
-    plt.xticks(range(len(category_counts)), category_counts.index, rotation=0)
-    plt.yticks()
-    plt.grid(axis='y', linestyle='--', alpha=0.3)
-    # Add value labels on bars
-    for bar, count in zip(bars, category_counts.values):
-        plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(category_counts.values)*0.01,
-                 str(count), ha='center', va='bottom', fontsize=12)
-    plt.tight_layout()
-    plt.savefig(output_path / 'length_category_distribution.png', dpi=300, bbox_inches='tight')
-    plt.close()
-
 def create_visualizations(sequences_df: pd.DataFrame, output_dir: str):
     """Create comprehensive visualizations of sequence length distribution.
     
@@ -291,6 +204,56 @@ def create_visualizations(sequences_df: pd.DataFrame, output_dir: str):
     create_length_distribution_by_category(sequences_df, output_path)
     
     logger.info(f"Visualizations saved to {output_path}")
+
+
+def create_length_vs_gc_plot(sequences_df: pd.DataFrame, output_path: Path):
+    """Create scatter plot of length vs GC content.
+    """
+    plt.figure(figsize=(10, 6))
+    plt.scatter(sequences_df['length'], sequences_df['gc_content'], 
+               alpha=0.6, s=20)
+    plt.xlabel('Sequence Length')
+    plt.ylabel('GC Content (%)')
+    plt.title('Sequence Length vs GC Content')
+    plt.grid(True, alpha=0.3)
+    plt.savefig(output_path / 'length_vs_gc_content.png', dpi=300, bbox_inches='tight')
+    plt.close()
+
+
+def create_length_distribution_by_category(sequences_df: pd.DataFrame, output_path: Path):
+    """
+    Create length distribution categorized by length ranges.
+    """
+    # Define length categories
+    sequences_df['length_category'] = pd.cut(
+        sequences_df['length'], 
+        bins=[0, 50, 100, 200, np.inf],
+        labels=['0-50', '51-100', '101-200', '>200']
+    )
+    plt.figure(figsize=(10, 6))
+    category_counts = sequences_df['length_category'].value_counts().sort_index()
+    palette = plt.get_cmap('tab10')
+    color = palette(0)  # Use the first color from tab10
+    bars = plt.bar(
+        range(len(category_counts)),
+        category_counts.values,
+        color=color,
+        edgecolor='black',
+        linewidth=1.5
+    )
+    plt.xlabel('Length Category', fontsize=13)
+    plt.ylabel('Number of Sequences', fontsize=13)
+    plt.title('Sequence Distribution by Length Category', fontsize=15, fontweight='bold')
+    plt.xticks(range(len(category_counts)), category_counts.index, rotation=0, fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.grid(axis='y', linestyle='--', alpha=0.3)
+    # Add value labels on bars
+    for bar, count in zip(bars, category_counts.values):
+        plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(category_counts.values)*0.01,
+                 str(count), ha='center', va='bottom', fontsize=12, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig(output_path / 'length_category_distribution.png', dpi=300, bbox_inches='tight')
+    plt.close()
 
 
 def save_results(sequences_df: pd.DataFrame, stats: dict, output_dir: str):

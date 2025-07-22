@@ -54,14 +54,14 @@ def example():
    - Create a script that reads all `.fasta` files from `competition/train/seqs/`
    - Extract sequence lengths and generate comprehensive statistics (min, max, mean, median, std)
    - Create visualizations: histogram with appropriate binning, box plot, and cumulative distribution
-   - Save results to `pdb_prune/EDA/sequence_length_analysis/`
+   - Save results to `EDA/sequence_length_analysis/`
 
 2. **Base Composition Analysis**
    - Analyze the frequency of each RNA base (A, U, G, C) across all sequences
    - Calculate base composition percentages per sequence and overall dataset
    - Create visualizations: bar charts for overall base frequencies, heatmap for per-sequence composition
    - Identify any unusual base patterns or biases
-   - Save results to `pdb_prune/EDA/base_composition_analysis/`
+   - Save results to `EDA/base_composition_analysis/`
 
 #### **Phase 2: Coordinate Analysis (NPY files in `competition/train/coords/`)**
 
@@ -71,13 +71,13 @@ def example():
    - **Important**: Exclude the first phosphorus atom (P) from NaN analysis as per your requirement
    - Create visualizations: histogram of NaN counts per file, heatmap showing NaN positions
    - Calculate statistics: percentage of files with NaN values, average NaN count per file
-   - Save results to `pdb_prune/EDA/coordinate_nan_analysis/`
+   - Save results to `EDA/coordinate_nan_analysis/`
 
 4. **Coordinate Structure Analysis**
    - Analyze the shape and structure of coordinate arrays
    - Calculate statistics on array dimensions (number of residues, atoms per residue)
    - Identify any structural patterns or anomalies
-   - Save results to `pdb_prune/EDA/coordinate_structure_analysis/`
+   - Save results to `EDA/coordinate_structure_analysis/`
 
 #### **Phase 3: PDB Structure Analysis (`competition/official_training_pdbs/`)**
 
@@ -86,13 +86,13 @@ def example():
    - Count side chains per PDB structure
    - Analyze side chain distribution and identify crystal structure artifacts
    - Create visualizations: histogram of side chain counts, correlation with sequence length
-   - Save results to `pdb_prune/EDA/pdb_sidechain_analysis/`
+   - Save results to `EDA/pdb_sidechain_analysis/`
 
 6. **Cross-Dataset Correlation Analysis**
    - Correlate sequence lengths with coordinate array dimensions
    - Analyze relationship between base composition and coordinate quality (NaN patterns)
    - Identify any systematic patterns across the three data types
-   - Save results to `pdb_prune/EDA/cross_correlation_analysis/`
+   - Save results to `EDA/cross_correlation_analysis/`
 
 #### **Phase 4: Summary and Reporting**
 
@@ -101,7 +101,7 @@ def example():
    - Include interactive visualizations where appropriate
    - Generate summary statistics and key findings
    - Create a markdown report with insights and recommendations
-   - Save all outputs to `pdb_prune/EDA/`
+   - Save all outputs to `EDA/`
 
 ### **Technical Requirements:**
 
@@ -122,7 +122,7 @@ def example():
 
 ### **File Structure for Results:**
 ```
-pdb_prune/EDA/
+EDA/
 ├── sequence_length_analysis/
 ├── base_composition_analysis/
 ├── coordinate_nan_analysis/
@@ -138,4 +138,4 @@ pdb_prune/EDA/
 - Provide clear documentation for each analysis component
 - Ensure reproducibility with seed setting for random operations
 
-This prompt provides a comprehensive framework for conducting systematic EDA on your RNA training data, covering all the aspects you mentioned while maintaining clear structure and deliverables, with all results nested within the `pdb_prune/EDA/` folder structure.
+This prompt provides a comprehensive framework for conducting systematic EDA on your RNA training data, covering all the aspects you mentioned while maintaining clear structure and deliverables, with all results nested within the `EDA/` folder structure.

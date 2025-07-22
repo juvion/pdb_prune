@@ -18,8 +18,26 @@ from tqdm import tqdm
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-plt.style.use('seaborn')
-sns.set_palette("husl")
+# Unified plot style settings
+import seaborn as sns
+sns.set_theme(style="whitegrid", palette="tab10")
+import matplotlib as mpl
+plt.rcParams.update({
+    "font.family": "DejaVu Sans",
+    "axes.titlesize": 23,  # Title font size
+    "axes.labelsize": 19,  # Label font size
+    "xtick.labelsize": 17,
+    "ytick.labelsize": 17,
+    "legend.fontsize": 17,
+    "figure.figsize": (8, 6),
+    "axes.grid": True,
+    "grid.alpha": 0.3,
+    "axes.facecolor": "white",
+    "savefig.dpi": 300,
+    "lines.linewidth": 2,
+})
+
+sns.set_theme(style="whitegrid", palette="tab10")
 
 BASES = ['A', 'U', 'G', 'C']
 
@@ -95,10 +113,32 @@ def overall_base_composition(sequences_df: pd.DataFrame) -> dict:
 
 def plot_base_composition_bar(overall_comp: dict, output_dir: str):
     """
-    Plot a bar chart of overall base composition.
+    Plot a bar chart of overall base composition using Tableau 10 blue for all bars.
     """
+    import seaborn as sns
+    sns.set_theme(style="whitegrid", palette="tab10")
+    import matplotlib as mpl
+    plt.rcParams.update({
+        "font.family": "DejaVu Sans",
+        "axes.titlesize": 23,  # Title font size
+        "axes.labelsize": 19,  # Label font size
+        "xtick.labelsize": 17,
+        "ytick.labelsize": 17,
+        "legend.fontsize": 17,
+        "figure.figsize": (8, 6),
+        "axes.grid": True,
+        "grid.alpha": 0.3,
+        "axes.facecolor": "white",
+        "savefig.dpi": 300,
+        "lines.linewidth": 2,
+    })
+
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
     plt.figure(figsize=(6, 5))
-    sns.barplot(x=list(overall_comp.keys()), y=list(overall_comp.values()))
+    palette = plt.get_cmap('tab10')
+    color = palette(0)
+    bars = plt.bar(list(overall_comp.keys()), list(overall_comp.values()), color=color, alpha=0.7)
     plt.ylabel('Percentage (%)')
     plt.xlabel('Base')
     plt.title('Overall Base Composition')
@@ -106,13 +146,15 @@ def plot_base_composition_bar(overall_comp: dict, output_dir: str):
     for i, v in enumerate(overall_comp.values()):
         plt.text(i, v + 1, f"{v:.1f}", ha='center')
     plt.tight_layout()
-    plt.savefig(Path(output_dir) / 'overall_base_composition.png', dpi=300)
+    plt.savefig(output_path / 'overall_base_composition.png', dpi=300)
     plt.close()
 
 def plot_base_composition_heatmap(sequences_df: pd.DataFrame, output_dir: str):
     """
     Plot a heatmap of per-sequence base composition.
     """
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
     heatmap_data = sequences_df[[f'percent_{base}' for base in BASES]]
     plt.figure(figsize=(10, 8))
     sns.heatmap(heatmap_data, cmap='viridis', cbar_kws={'label': 'Percentage'})
@@ -120,7 +162,7 @@ def plot_base_composition_heatmap(sequences_df: pd.DataFrame, output_dir: str):
     plt.xlabel('Base')
     plt.ylabel('Sequence Index')
     plt.tight_layout()
-    plt.savefig(Path(output_dir) / 'base_composition_heatmap.png', dpi=300)
+    plt.savefig(output_path / 'base_composition_heatmap.png', dpi=300)
     plt.close()
 
 def save_results(sequences_df: pd.DataFrame, overall_comp: dict, output_dir: str):
@@ -140,7 +182,7 @@ def main():
     Main function to run base composition analysis.
     """
     fasta_dir = "competition/train/seqs"
-    output_dir = "pdb_prune/EDA/base_composition_analysis"
+    output_dir = "EDA/base_composition_analysis"
     try:
         sequences_df = read_fasta_files(fasta_dir)
         sequences_df = analyze_base_composition(sequences_df)

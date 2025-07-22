@@ -6,8 +6,23 @@ import seaborn as sns
 from pathlib import Path
 from typing import Tuple
 
-# Set seaborn style
-sns.set(style="whitegrid", context="notebook")
+# Unified plot style settings
+plt.rcParams.update({
+    "font.family": "DejaVu Sans",
+    "axes.titlesize": 18,
+    "axes.labelsize": 15,
+    "xtick.labelsize": 13,
+    "ytick.labelsize": 13,
+    "legend.fontsize": 13,
+    "figure.figsize": (8, 6),
+    "axes.grid": True,
+    "grid.alpha": 0.3,
+    "axes.facecolor": "white",
+    "savefig.dpi": 300,
+    "lines.linewidth": 2,
+})
+
+sns.set_theme(style="whitegrid", palette="tab10")
 
 # Output directory
 OUTPUT_DIR = Path(__file__).parent
@@ -64,10 +79,30 @@ def load_and_merge_data() -> pd.DataFrame:
 
 def plot_scatter_with_reg(x, y, data, xlabel, ylabel, title, out_path):
     """
-    Scatter plot with regression line.
+    Scatter plot without regression line, using Tableau 10 blue with alpha=0.7.
     """
+    import seaborn as sns
+    sns.set_theme(style="whitegrid", palette="tab10")
+    import matplotlib as mpl
+    plt.rcParams.update({
+        "font.family": "DejaVu Sans",
+        "axes.titlesize": 23,  # Title font size
+        "axes.labelsize": 19,  # Label font size    
+        "xtick.labelsize": 17,
+        "ytick.labelsize": 17,
+        "legend.fontsize": 17,
+        "figure.figsize": (8, 6),
+        "axes.grid": True,
+        "grid.alpha": 0.3,
+        "axes.facecolor": "white",
+        "savefig.dpi": 300,
+        "lines.linewidth": 2,
+    })  
+
     plt.figure(figsize=(8, 6))
-    sns.regplot(x=x, y=y, data=data, scatter_kws={"s": 15, "alpha": 0.5}, line_kws={"color": "red"})
+    palette = plt.get_cmap('tab10')
+    color = palette(0)
+    plt.scatter(data[x], data[y], s=23, alpha=0.7, color=color)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)

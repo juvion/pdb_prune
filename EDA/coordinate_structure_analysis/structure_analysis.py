@@ -18,8 +18,23 @@ from tqdm import tqdm
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-plt.style.use('seaborn')
-sns.set_palette("husl")
+# Unified plot style settings
+plt.rcParams.update({
+    "font.family": "DejaVu Sans",
+    "axes.titlesize": 18,
+    "axes.labelsize": 15,
+    "xtick.labelsize": 13,
+    "ytick.labelsize": 13,
+    "legend.fontsize": 13,
+    "figure.figsize": (8, 6),
+    "axes.grid": True,
+    "grid.alpha": 0.3,
+    "axes.facecolor": "white",
+    "savefig.dpi": 300,
+    "lines.linewidth": 2,
+})
+
+sns.set_theme(style="whitegrid", palette="tab10")
 
 def list_npy_files(coords_dir: str):
     """
@@ -66,15 +81,15 @@ def plot_structure_histograms(structure_stats_df: pd.DataFrame, output_dir: str)
     output_path.mkdir(parents=True, exist_ok=True)
     plt.figure(figsize=(12, 4))
     plt.subplot(1, 3, 1)
-    sns.histplot(structure_stats_df['n_residues'], bins=50, color='skyblue')
+    sns.histplot(structure_stats_df['n_residues'], bins=50, color=None, palette="tab10")
     plt.xlabel('Number of Residues')
     plt.title('Residues per File')
     plt.subplot(1, 3, 2)
-    sns.histplot(structure_stats_df['n_atoms'], bins=10, color='orange')
+    sns.histplot(structure_stats_df['n_atoms'], bins=10, color=None, palette="tab10")
     plt.xlabel('Number of Atoms')
     plt.title('Atoms per File')
     plt.subplot(1, 3, 3)
-    sns.histplot(structure_stats_df['n_coords'], bins=5, color='green')
+    sns.histplot(structure_stats_df['n_coords'], bins=5, color=None, palette="tab10")
     plt.xlabel('Number of Coordinates')
     plt.title('Coordinates per File')
     plt.tight_layout()
@@ -105,7 +120,7 @@ def main():
     Main function to run coordinate structure analysis.
     """
     coords_dir = "competition/train/coords"
-    output_dir = "pdb_prune/EDA/coordinate_structure_analysis"
+    output_dir = "EDA/coordinate_structure_analysis"
     try:
         npy_files = list_npy_files(coords_dir)
         structure_stats_df = analyze_structure(npy_files)
