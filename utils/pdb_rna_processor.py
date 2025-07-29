@@ -254,6 +254,106 @@ class PDBRNAProcessor:
         
         return fasta_files
 
+    def extract_individual_rna_chains(self, pdb_files: List[str], output_dir: str = "extracted_rna_chains") -> List[str]:
+        """Extract individual RNA chains from specific PDB files.
+        
+        Args:
+            pdb_files (List[str]): List of paths to PDB files to process
+            output_dir (str): Directory to save extracted RNA chain PDB files
+            
+        Returns:
+            List[str]: List of paths to extracted RNA chain PDB files
+        """
+        output_path = Path(output_dir)
+        output_path.mkdir(exist_ok=True)
+        
+        extracted_files = []
+        
+        for pdb_file in pdb_files:
+            pdb_path = Path(pdb_file)
+            if not pdb_path.exists():
+                logging.error(f"PDB file not found: {pdb_file}")
+                continue
+                
+            logging.info(f"Processing {pdb_path.name} for RNA chain extraction...")
+            
+            try:
+                parser = self.get_parser(str(pdb_path))
+                structure = parser.get_structure('RNA', str(pdb_path))
+                pdb_code = pdb_path.stem
+                
+                rna_chains_found = 0
+                
+                for model in structure:
+                    for chain in model:
+                        if not self.is_rna_chain(chain):
+                            continue
+                        
+                        rna_chains_found += 1
+                        
+                        # Get sequence for logging
+                        seq = self.get_chain_sequence(chain)
+                        if not seq:
+                            logging.warning(f"No valid RNA sequence found in chain {chain.id} of {pdb_path.name}")
+                            continue
+                        
+                        # Create a new structure for this RNA chain
+                        new_structure = Structure.Structure('RNA')
+                        new_model = Model.Model(0)
+                        
+                        # Use original chain ID (preserve it as is)
+                        new_chain = Chain.Chain(chain.id)
+                        
+                        # Add only RNA residues with specified atoms
+                        for residue in chain:
+                            resname = residue.get_resname().strip()
+                            
+                            # Only process RNA residues
+                            if resname in ['A', 'U', 'G', 'C', 'RA', 'RU', 'RG', 'RC']:
+                                # Handle residue name formatting
+                                if resname.startswith('R'):
+                                    resname = resname[1]  # Remove 'R' prefix if present
+                                
+                                new_residue = Residue.Residue(residue.id, resname, residue.segid)
+                                for atom in self.get_rna_atoms(residue):
+                                    new_residue.add(atom)
+                                
+                                if len(new_residue) > 0:  # Only add if it has atoms
+                                    new_chain.add(new_residue)
+                        
+                        if len(new_chain) > 0:  # Only save if chain has residues
+                            new_model.add(new_chain)
+                            new_structure.add(new_model)
+                            
+                            # Save with naming convention: PDBCode_chainID.pdb
+                            output_filename = f"{pdb_code}_{chain.id}.pdb"
+                            output_file_path = output_path / output_filename
+                            
+                            io = PDBIO()
+                            io.set_structure(new_structure)
+                            io.save(str(output_file_path))
+                            
+                            extracted_files.append(str(output_file_path))
+                            
+                            # Log extraction details
+                            num_residues = len(list(new_chain))
+                            num_atoms = len(list(new_chain.get_atoms()))
+                            logging.info(f"  Extracted chain {chain.id}: {output_filename} | Sequence: {seq} | Residues: {num_residues} | Atoms: {num_atoms}")
+                
+                if rna_chains_found == 0:
+                    logging.info(f"  No RNA chains found in {pdb_path.name}")
+                else:
+                    logging.info(f"  Found and extracted {rna_chains_found} RNA chain(s) from {pdb_path.name}")
+                    
+            except Exception as e:
+                logging.error(f"Error processing {pdb_file}: {e}")
+                continue
+        
+        logging.info(f"\nExtraction complete. Total files extracted: {len(extracted_files)}")
+        logging.info(f"Output directory: {output_path}")
+        
+        return extracted_files
+
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Process PDB/CIF files to extract RNA chains and sequences.')
@@ -323,4 +423,4 @@ def main():
     logging.info(f"Successfully processed files: {processor.stats['processed_files']}")
 
 if __name__ == "__main__":
-    main() 
+    main()

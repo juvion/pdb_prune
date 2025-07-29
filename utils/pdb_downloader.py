@@ -143,13 +143,17 @@ class PDBDownloader:
             if output_file.exists():
                 output_file.unlink()
 
-def download_rna_pdbs(download_directory="data/download_pdbs/downloaded_rna_pdbs", max_entries=20):
+def download_rna_pdbs(download_directory="data/download_pdbs/downloaded_rna_pdbs", max_entries=20, start_from=0, batch_size=100, max_retries=3, search_start_page=0):
     """
     Download PDB files containing RNA structures.
     
     Args:
         download_directory (str): Directory to save downloaded PDB files
         max_entries (int): Maximum number of PDB entries to download
+        start_from (int): Starting index for resuming downloads
+        batch_size (int): Number of entries to process in each batch
+        max_retries (int): Maximum number of retry attempts for failed downloads
+        search_start_page (int): Starting page for PDB API search (for resuming search)
     """
     # Initialize PDBList
     pdbl = PDBList()
@@ -191,78 +195,213 @@ def download_rna_pdbs(download_directory="data/download_pdbs/downloaded_rna_pdbs
     
     # Collect unique PDB IDs
     unique_pdb_ids = set()
-    start = 0
+    search_start = search_start_page * 100  # Convert page to start index
     
-    while len(unique_pdb_ids) < max_entries:
+    # Load existing PDB IDs if resuming
+    pdb_ids_file = os.path.join(download_directory, "found_pdb_ids.txt")
+    if os.path.exists(pdb_ids_file) and search_start_page > 0:
+        logging.info(f"Loading existing PDB IDs from {pdb_ids_file}...")
         try:
-            # Update pagination in the body
-            query_body["request_options"]["paginate"]["start"] = start
-            
-            # Send request
-            logging.info(f"Sending search request to PDB API for start={start}...")
-            response = requests.post(
-                search_url,
-                json=query_body,
-                headers=headers
-            )
-            response.raise_for_status()
-            
-            # Parse response
-            data = response.json()
-            
-            # Extract PDB IDs
-            pdb_ids = [entry["identifier"].lower() for entry in data.get("result_set", [])]
-            logging.info(f"PDB IDs from page {start//100 + 1}: {pdb_ids}")
-            
-            # Add to unique set
-            unique_pdb_ids.update(pdb_ids)
-            logging.info(f"Current unique PDB IDs count: {len(unique_pdb_ids)}")
-            
-            # If we got fewer results than requested, we've reached the end
-            if len(pdb_ids) < query_body["request_options"]["paginate"]["rows"]:
-                break
+            with open(pdb_ids_file, 'r') as f:
+                existing_ids = {line.strip() for line in f if line.strip()}
+                unique_pdb_ids.update(existing_ids)
+                logging.info(f"Loaded {len(existing_ids)} existing PDB IDs")
+        except Exception as e:
+            logging.warning(f"Could not load existing PDB IDs: {e}")
+    
+    max_search_attempts = 50  # Limit total search attempts to prevent infinite loops
+    search_attempts = 0
+    
+    while len(unique_pdb_ids) < max_entries and search_attempts < max_search_attempts:
+        retry_count = 0
+        success = False
+        search_attempts += 1
+        
+        while retry_count < max_retries and not success:
+            try:
+                # Update pagination in the body
+                query_body["request_options"]["paginate"]["start"] = search_start
                 
-            # Increment start for next page
-            start += query_body["request_options"]["paginate"]["rows"]
-            
-            # Add a small delay to avoid overwhelming the API
-            time.sleep(1)
-            
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Network error during PDB search: {e}")
+                # Send request
+                current_page = search_start//100 + 1
+                logging.info(f"Sending search request to PDB API for page {current_page} (start={search_start})... (attempt {retry_count + 1})")
+                response = requests.post(
+                    search_url,
+                    json=query_body,
+                    headers=headers,
+                    timeout=45  # Increased timeout
+                )
+                response.raise_for_status()
+                
+                # Parse response
+                data = response.json()
+                
+                # Extract PDB IDs
+                pdb_ids = [entry["identifier"].lower() for entry in data.get("result_set", [])]
+                logging.info(f"PDB IDs from page {current_page}: {len(pdb_ids)} entries")
+                
+                # Add to unique set
+                before_count = len(unique_pdb_ids)
+                unique_pdb_ids.update(pdb_ids)
+                new_ids_added = len(unique_pdb_ids) - before_count
+                logging.info(f"Added {new_ids_added} new unique PDB IDs. Total: {len(unique_pdb_ids)}")
+                
+                # Save progress periodically
+                if current_page % 5 == 0:  # Save every 5 pages
+                    with open(pdb_ids_file, 'w') as f:
+                        for pdb_id in sorted(unique_pdb_ids):
+                            f.write(f"{pdb_id}\n")
+                    logging.info(f"Progress saved to {pdb_ids_file}")
+                
+                # If we got fewer results than requested, we've reached the end
+                if len(pdb_ids) < query_body["request_options"]["paginate"]["rows"]:
+                    logging.info(f"Reached end of search results at page {current_page}")
+                    success = True
+                    break
+                    
+                success = True
+                
+            except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
+                retry_count += 1
+                logging.error(f"Error during PDB search (attempt {retry_count}): {e}")
+                if retry_count < max_retries:
+                    wait_time = min(2 ** retry_count, 30)  # Cap wait time at 30 seconds
+                    logging.info(f"Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+                else:
+                    logging.error(f"Failed to fetch page {current_page} after {max_retries} attempts. Stopping search.")
+                    break
+            except KeyboardInterrupt:
+                logging.info("Search interrupted by user. Saving progress...")
+                with open(pdb_ids_file, 'w') as f:
+                    for pdb_id in sorted(unique_pdb_ids):
+                        f.write(f"{pdb_id}\n")
+                logging.info(f"Progress saved to {pdb_ids_file}")
+                raise
+        
+        if not success:
+            logging.warning(f"Failed to fetch page {current_page}. Continuing with available {len(unique_pdb_ids)} PDB IDs.")
             break
-        except json.JSONDecodeError as e:
-            logging.error(f"Error parsing API response: {e}")
-            break
+            
+        # Increment start for next page
+        search_start += query_body["request_options"]["paginate"]["rows"]
+        
+        # Add a small delay to avoid overwhelming the API
+        time.sleep(2)  # Increased delay
+    
+    # Save final list of found PDB IDs
+    with open(pdb_ids_file, 'w') as f:
+        for pdb_id in sorted(unique_pdb_ids):
+            f.write(f"{pdb_id}\n")
+    logging.info(f"Final PDB IDs list saved to {pdb_ids_file}")
     
     if len(unique_pdb_ids) < max_entries:
         logging.warning(f"Only found {len(unique_pdb_ids)} unique PDB entries, less than requested {max_entries}.")
     
-    # Download the PDB files
-    logging.info(f"Found {len(unique_pdb_ids)} unique PDB entries containing RNA. Starting download...")
-    downloaded_count = 0
+    # Convert to list and apply start_from offset
+    pdb_ids_list = list(unique_pdb_ids)
+    if start_from > 0:
+        pdb_ids_list = pdb_ids_list[start_from:]
+        logging.info(f"Resuming download from index {start_from}")
     
-    for pdb_id in unique_pdb_ids:
-        if downloaded_count >= max_entries:
-            break
+    # Limit to max_entries
+    if len(pdb_ids_list) > max_entries:
+        pdb_ids_list = pdb_ids_list[:max_entries]
+    
+    # Download the PDB files in batches
+    logging.info(f"Found {len(unique_pdb_ids)} unique PDB entries containing RNA. Starting download of {len(pdb_ids_list)} entries...")
+    downloaded_count = 0
+    failed_downloads = []
+    
+    for i in range(0, len(pdb_ids_list), batch_size):
+        batch = pdb_ids_list[i:i + batch_size]
+        logging.info(f"Processing batch {i//batch_size + 1}: entries {i+1} to {min(i+batch_size, len(pdb_ids_list))}")
+        
+        for pdb_id in batch:
+            if downloaded_count >= max_entries:
+                break
+                
+            # Check if file already exists
+            existing_files = [
+                os.path.join(download_directory, f"pdb{pdb_id}.ent"),
+                os.path.join(download_directory, f"{pdb_id}.pdb"),
+                os.path.join(download_directory, f"{pdb_id}.cif")
+            ]
             
-        try:
-            logging.info(f"Attempting to download {pdb_id}...")
-            pdbl.retrieve_pdb_file(
-                pdb_id,
-                pdir=download_directory,
-                file_format="pdb"
-            )
-            logging.info(f"Successfully downloaded {pdb_id}")
-            downloaded_count += 1
-        except Exception as e:
-            logging.error(f"Error downloading {pdb_id}: {e}")
+            if any(os.path.exists(f) for f in existing_files):
+                logging.info(f"File already exists for {pdb_id}, skipping...")
+                downloaded_count += 1
+                continue
+            
+            retry_count = 0
+            success = False
+            
+            while retry_count < max_retries and not success:
+                try:
+                    logging.info(f"Attempting to download {pdb_id}... (attempt {retry_count + 1})")
+                    pdbl.retrieve_pdb_file(
+                        pdb_id,
+                        pdir=download_directory,
+                        file_format="pdb"
+                    )
+                    logging.info(f"Successfully downloaded {pdb_id}")
+                    downloaded_count += 1
+                    success = True
+                    
+                except Exception as e:
+                    retry_count += 1
+                    logging.error(f"Error downloading {pdb_id} (attempt {retry_count}): {e}")
+                    if retry_count < max_retries:
+                        wait_time = 2 ** retry_count  # Exponential backoff
+                        logging.info(f"Retrying in {wait_time} seconds...")
+                        time.sleep(wait_time)
+                    else:
+                        logging.error(f"Failed to download {pdb_id} after {max_retries} attempts")
+                        failed_downloads.append(pdb_id)
+            
+            # Small delay between downloads to be respectful to the server
+            time.sleep(0.5)
+        
+        # Longer delay between batches
+        if i + batch_size < len(pdb_ids_list):
+            logging.info(f"Completed batch {i//batch_size + 1}. Waiting 5 seconds before next batch...")
+            time.sleep(5)
     
     # Print summary
     logging.info("\n--- Download Summary ---")
     logging.info(f"Total unique found: {len(unique_pdb_ids)}")
     logging.info(f"Successfully downloaded: {downloaded_count}")
+    logging.info(f"Failed downloads: {len(failed_downloads)}")
+    if failed_downloads:
+        logging.info(f"Failed PDB IDs: {failed_downloads[:10]}{'...' if len(failed_downloads) > 10 else ''}")
     logging.info("-----------------------")
+    
+    # Save failed downloads to file for retry
+    if failed_downloads:
+        failed_file = os.path.join(download_directory, "failed_downloads.txt")
+        with open(failed_file, 'w') as f:
+            for pdb_id in failed_downloads:
+                f.write(f"{pdb_id}\n")
+        logging.info(f"Failed downloads saved to: {failed_file}")
 
 if __name__ == "__main__":
-    download_rna_pdbs(max_entries=5000)
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Download RNA PDB files')
+    parser.add_argument('--max_entries', type=int, default=7000, help='Maximum number of entries to download')
+    parser.add_argument('--start_from', type=int, default=0, help='Starting index for resuming downloads')
+    parser.add_argument('--batch_size', type=int, default=50, help='Number of entries to process in each batch')
+    parser.add_argument('--max_retries', type=int, default=3, help='Maximum retry attempts for failed downloads')
+    parser.add_argument('--output_dir', type=str, default="downloaded_rna_pdbs2", help='Output directory for downloaded files')
+    parser.add_argument('--search_start_page', type=int, default=0, help='Starting page for PDB API search (for resuming search)')
+    
+    args = parser.parse_args()
+    
+    download_rna_pdbs(
+        download_directory=args.output_dir,
+        max_entries=args.max_entries,
+        start_from=args.start_from,
+        batch_size=args.batch_size,
+        max_retries=args.max_retries,
+        search_start_page=args.search_start_page
+    )
