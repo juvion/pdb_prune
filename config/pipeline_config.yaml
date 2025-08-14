@@ -1,0 +1,64 @@
+# RNA 3D Inverse Folding Pipeline Configuration
+
+# Data directories
+data:
+  raw_pdbs_dir: "data/raw_data/pdbs"
+  processed_dir: "data/processed"
+  experiments_dir: "data/experiments_data"
+  cache_dir: "data/cache"
+  temp_dir: "data/temp"
+
+# Processing parameters
+processing:
+  max_entries: 8904
+  batch_size: 100
+  max_retries: 3
+  timeout_seconds: 45
+  delay_between_requests: 2.0
+  
+# RNA structure parameters
+rna:
+  distance_cutoff: 10.0
+  min_loop_length: 3
+  max_loop_length: 20
+  atom_types: ["P", "O5'", "C5'", "C4'", "C3'", "O3'", "N1", "N9"]
+  base_atoms:
+    A: "N9"
+    U: "N1"
+    G: "N9"
+    C: "N1"
+    RA: "N9"
+    RU: "N1"
+    RG: "N9"
+    RC: "N1"
+
+# Quality control thresholds
+quality:
+  max_nan_percentage: 20.0
+  min_sequence_length: 3
+  max_sequence_length: 1000
+  min_residues_per_structure: 3
+  max_residues_per_structure: 2000
+  resolution_cutoff: 3.5
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_rotation: true
+  max_file_size: "10MB"
+  backup_count: 5
+
+# Performance settings
+performance:
+  chunk_size: 1000
+  max_memory_usage: "8GB"
+  parallel_workers: 4
+  enable_caching: true
+
+# Experiment tracking
+experiments:
+  auto_versioning: true
+  track_metrics: true
+  save_checkpoints: true
+  checkpoint_frequency: 100

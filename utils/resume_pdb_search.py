@@ -5,7 +5,14 @@ This script can analyze the current state and suggest the best resume parameters
 """
 
 import os
+import sys
 import argparse
+
+# Add the project root to Python path to allow imports
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from utils.pdb_downloader import download_rna_pdbs
 
 def analyze_progress(output_dir):
@@ -54,15 +61,29 @@ def analyze_progress(output_dir):
     return results
 
 def main():
-    parser = argparse.ArgumentParser(description='Resume PDB search and download')
+    parser = argparse.ArgumentParser(
+        description='Resume PDB search and download from where it left off',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Analyze current progress only
+  python utils/resume_pdb_search.py --output_dir data/download_pdbs/downloaded_rna_pdbs --analyze_only
+  
+  # Resume download with auto-detected parameters
+  python utils/resume_pdb_search.py --output_dir data/download_pdbs/downloaded_rna_pdbs --max_entries 8000
+  
+  # Resume with specific parameters
+  python utils/resume_pdb_search.py --output_dir data/download_pdbs/downloaded_rna_pdbs --max_entries 8000 --search_start_page 80 --start_from 5693
+        """
+    )
     parser.add_argument('--output_dir', type=str, default="downloaded_rna_pdbs2", 
-                       help='Output directory for downloaded files')
+                       help='Output directory for downloaded files (default: downloaded_rna_pdbs2)')
     parser.add_argument('--max_entries', type=int, default=7000, 
-                       help='Maximum number of entries to download')
+                       help='Maximum number of entries to download (default: 7000)')
     parser.add_argument('--batch_size', type=int, default=50, 
-                       help='Number of entries to process in each batch')
+                       help='Number of entries to process in each batch (default: 50)')
     parser.add_argument('--max_retries', type=int, default=3, 
-                       help='Maximum retry attempts for failed downloads')
+                       help='Maximum retry attempts for failed downloads (default: 3)')
     parser.add_argument('--search_start_page', type=int, default=None, 
                        help='Starting page for PDB API search (auto-detected if not specified)')
     parser.add_argument('--start_from', type=int, default=None, 

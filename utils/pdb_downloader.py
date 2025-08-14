@@ -312,15 +312,15 @@ def download_rna_pdbs(download_directory="data/download_pdbs/downloaded_rna_pdbs
     logging.info(f"Found {len(unique_pdb_ids)} unique PDB entries containing RNA. Starting download of {len(pdb_ids_list)} entries...")
     downloaded_count = 0
     failed_downloads = []
+    processed_count = 0
     
     for i in range(0, len(pdb_ids_list), batch_size):
         batch = pdb_ids_list[i:i + batch_size]
         logging.info(f"Processing batch {i//batch_size + 1}: entries {i+1} to {min(i+batch_size, len(pdb_ids_list))}")
         
         for pdb_id in batch:
-            if downloaded_count >= max_entries:
-                break
-                
+            processed_count += 1
+            
             # Check if file already exists
             existing_files = [
                 os.path.join(download_directory, f"pdb{pdb_id}.ent"),
@@ -370,6 +370,7 @@ def download_rna_pdbs(download_directory="data/download_pdbs/downloaded_rna_pdbs
     # Print summary
     logging.info("\n--- Download Summary ---")
     logging.info(f"Total unique found: {len(unique_pdb_ids)}")
+    logging.info(f"Total processed: {processed_count}")
     logging.info(f"Successfully downloaded: {downloaded_count}")
     logging.info(f"Failed downloads: {len(failed_downloads)}")
     if failed_downloads:
