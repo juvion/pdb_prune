@@ -17,9 +17,20 @@ from tqdm import tqdm
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Set style for better plots
-plt.style.use('seaborn')
-sns.set_palette("husl")
+# Unified style for all EDA plots
+sns.set(style="whitegrid", palette="husl", context="notebook")
+plt.rcParams.update({
+    "font.family": "sans-serif",
+    "font.size": 13,
+    "axes.titlesize": 15,
+    "axes.titleweight": "bold",
+    "axes.labelsize": 13,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12,
+    "legend.fontsize": 12,
+    "figure.titlesize": 16,
+    "figure.figsize": (8, 6)
+})
 
 
 def read_fasta_files(fasta_dir: str) -> pd.DataFrame:
