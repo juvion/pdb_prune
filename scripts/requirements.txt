@@ -1,0 +1,17 @@
+# PDB 3D to 2D Base Pairing Analysis Requirements
+# Core dependencies for nucleic acid structure analysis
+
+# Numerical computing
+numpy>=1.20.0
+
+# PDB file parsing and structure analysis
+biopython>=1.79
+
+# Visualization (optional but recommended)
+matplotlib>=3.5.0
+
+# Testing framework (for development)
+pytest>=6.0.0
+
+# Type hints support (for Python < 3.9)
+typing-extensions>=4.0.0; python_version < "3.9"

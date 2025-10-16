@@ -1,0 +1,21 @@
+Parsing minimal PDB file: /Users/ju/Documents/Dev/pdb_prune/data/experiments_data/exp2.2_manuscript/extracted_pdbs/pdb1aqo_A.pdb
+Found 29 nucleotides
+Detecting base pairs among 29 nucleotides using n1_n9 distance method...
+Note: Using minimal atom set - no H-bond or coplanarity checks
+Found 32 base pairs
+
+=== Base Pairing Summary (Minimal Atom Version) ===
+Total nucleotides: 29
+Total base pairs: 32
+
+Base pair types:
+  A-U: 11
+  C-G: 13
+  G-U: 8
+
+Dot-bracket notation:
+((.((((((.((((.)).)))))))))).
+
+Atom availability:
+  N1/N9 atoms: 29/29
+  C4' atoms: 29/29
