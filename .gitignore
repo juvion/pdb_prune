@@ -30,6 +30,17 @@ co-intelligence.md
 # Large files
 *.tar
 *.tar.gz
+# Large log and data files
+nohup.out
+*.tar
+experiments_data.tar
+# Large competition data
+competition/
+data/competition/
+# Downloaded PDB files
+downloaded_rna_pdbs*/
+# Large CIF files
+*.cif
 
 # Python
 __pycache__/
