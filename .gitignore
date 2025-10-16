@@ -28,7 +28,7 @@ rna_sequences/
 co-intelligence.md
 
 # Large files
-data/downloaded_rna_pdbs.tar.gz
+*.tar
 *.tar.gz
 
 # Python
@@ -52,4 +52,5 @@ env/
 
 # OS
 .DS_Store
+experiments_data.tar
 experiments_data.tar
