@@ -52,3 +52,4 @@ env/
 
 # OS
 .DS_Store
+experiments_data.tar
