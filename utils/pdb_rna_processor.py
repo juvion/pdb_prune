@@ -136,7 +136,7 @@ class PDBRNAProcessor:
                 
         return self.chain_id_map[original_chain_id]
 
-    def process_structure(self, structure_path: str) -> List[str]:
+    def process_structure(self, structure_path: str, atom_option: str = "backbone") -> List[str]:
         """Process a structure file (PDB or CIF) to extract RNA chains and their atoms.
         
         Args:
@@ -152,6 +152,11 @@ class PDBRNAProcessor:
             self.stats["pdb_files"] += 1
             
         processed_files = []
+        
+        # Validate atom_option
+        if atom_option not in {"backbone", "all"}:
+            logging.warning(f"Invalid atom_option '{atom_option}'. Falling back to 'backbone'.")
+            atom_option = "backbone"
         
         try:
             parser = self.get_parser(structure_path)
@@ -186,7 +191,12 @@ class PDBRNAProcessor:
                             resname = resname[1]  # Remove 'R' prefix if present
                         
                         new_residue = Residue.Residue(residue.id, resname, residue.segid)
-                        for atom in self.get_rna_atoms(residue):
+                        # Choose atoms based on option
+                        if atom_option == "backbone":
+                            atoms_iter = self.get_rna_atoms(residue)
+                        else:  # "all"
+                            atoms_iter = list(residue.get_atoms())
+                        for atom in atoms_iter:
                             new_residue.add(atom)
                         if len(new_residue) > 0:  # Only add if it has atoms
                             new_chain.add(new_residue)
@@ -254,12 +264,18 @@ class PDBRNAProcessor:
         
         return fasta_files
 
-    def extract_individual_rna_chains(self, pdb_files: List[str], output_dir: str = "extracted_rna_chains") -> List[str]:
-        """Extract individual RNA chains from specific PDB files.
+    def extract_individual_rna_chains(self, pdb_files: List[str], output_dir: str = "extracted_rna_chains", atom_option: str = "backbone") -> List[str]:
+        """
+        Extract individual RNA chains from specific PDB/CIF files, with atom retention options.
+        
+        Options:
+        - "backbone": 只保留骨架原子与 N1/N9
+        - "all": 保留全部原子
         
         Args:
-            pdb_files (List[str]): List of paths to PDB files to process
+            pdb_files (List[str]): List of paths to PDB/CIF files to process
             output_dir (str): Directory to save extracted RNA chain PDB files
+            atom_option (str): Atom selection option, either "backbone" or "all"
             
         Returns:
             List[str]: List of paths to extracted RNA chain PDB files
@@ -267,7 +283,11 @@ class PDBRNAProcessor:
         output_path = Path(output_dir)
         output_path.mkdir(exist_ok=True)
         
-        extracted_files = []
+        extracted_files: List[str] = []
+        
+        if atom_option not in {"backbone", "all"}:
+            logging.warning(f"Invalid atom_option '{atom_option}'. Falling back to 'backbone'.")
+            atom_option = "backbone"
         
         for pdb_file in pdb_files:
             pdb_path = Path(pdb_file)
@@ -275,7 +295,7 @@ class PDBRNAProcessor:
                 logging.error(f"PDB file not found: {pdb_file}")
                 continue
                 
-            logging.info(f"Processing {pdb_path.name} for RNA chain extraction...")
+            logging.info(f"Processing {pdb_path.name} for RNA chain extraction (atom_option={atom_option})...")
             
             try:
                 parser = self.get_parser(str(pdb_path))
@@ -304,7 +324,7 @@ class PDBRNAProcessor:
                         # Use original chain ID (preserve it as is)
                         new_chain = Chain.Chain(chain.id)
                         
-                        # Add only RNA residues with specified atoms
+                        # Add RNA residues with selected atoms
                         for residue in chain:
                             resname = residue.get_resname().strip()
                             
@@ -315,7 +335,14 @@ class PDBRNAProcessor:
                                     resname = resname[1]  # Remove 'R' prefix if present
                                 
                                 new_residue = Residue.Residue(residue.id, resname, residue.segid)
-                                for atom in self.get_rna_atoms(residue):
+                                
+                                # Choose atoms based on option
+                                if atom_option == "backbone":
+                                    atoms_iter = self.get_rna_atoms(residue)
+                                else:  # "all"
+                                    atoms_iter = list(residue.get_atoms())
+                                
+                                for atom in atoms_iter:
                                     new_residue.add(atom)
                                 
                                 if len(new_residue) > 0:  # Only add if it has atoms
@@ -338,7 +365,7 @@ class PDBRNAProcessor:
                             # Log extraction details
                             num_residues = len(list(new_chain))
                             num_atoms = len(list(new_chain.get_atoms()))
-                            logging.info(f"  Extracted chain {chain.id}: {output_filename} | Sequence: {seq} | Residues: {num_residues} | Atoms: {num_atoms}")
+                            logging.info(f"  Extracted chain {chain.id} ({atom_option} atoms): {output_filename} | Sequence: {seq} | Residues: {num_residues} | Atoms: {num_atoms}")
                 
                 if rna_chains_found == 0:
                     logging.info(f"  No RNA chains found in {pdb_path.name}")
@@ -354,6 +381,7 @@ class PDBRNAProcessor:
         
         return extracted_files
 
+
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Process PDB/CIF files to extract RNA chains and sequences.')
@@ -363,6 +391,8 @@ def main():
                       help='Directory to store processed PDB files')
     parser.add_argument('--fasta-dir', type=str, default="rna_sequences",
                       help='Directory to store RNA sequences in FASTA format')
+    parser.add_argument('--atom-option', type=str, default='backbone', choices=['backbone', 'all'],
+                      help='Atom selection option for extraction: "backbone" keeps backbone + N1/N9; "all" keeps all atoms')
     args = parser.parse_args()
     
     processor = PDBRNAProcessor(
@@ -380,15 +410,15 @@ def main():
         logging.error(f"No structure files found in {args.original_dir} directory!")
         return
         
-    logging.info(f"Found {len(structure_files)} structure files to process")
+    logging.info(f"Found {len(structure_files)} structure files to process (atom_option={args.atom_option})")
     
     # Process each structure file
     for structure_path in structure_files:
-        logging.info(f"\nProcessing structure: {structure_path.name}")
+        logging.info(f"\nProcessing structure: {structure_path.name} (atom_option={args.atom_option})")
         logging.info("-" * 50)
         
         # Process the structure
-        processed_files = processor.process_structure(str(structure_path))
+        processed_files = processor.process_structure(str(structure_path), atom_option=args.atom_option)
         
         if not processed_files:
             logging.info(f"No RNA chains found in {structure_path.name}")
