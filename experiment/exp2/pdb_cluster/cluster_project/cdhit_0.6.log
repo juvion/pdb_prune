@@ -1,0 +1,15 @@
+
+Fatal Error:
+invalid clstr threshold, should >=0.8
+Program halted !!
+
+================================================================
+Program: CD-HIT, V4.8.1, Apr 07 2021, 02:35:32
+Command: cd-hit-est -i rna_sequences.fasta -o
+         clusters_seq_0.6.fasta -c 0.6 -n 4 -M 2000 -T 4
+
+Started: Tue Nov 11 15:33:47 2025
+================================================================
+                            Output                              
+----------------------------------------------------------------
+Option -T is ignored: multi-threading with OpenMP is NOT enabled!

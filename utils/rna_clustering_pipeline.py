@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class RNAClusteringPipeline:
-    def __init__(self, pdb_dir, fasta_dir, output_dir, max_seq_len=500):
+    def __init__(self, pdb_dir, fasta_dir, output_dir, max_seq_len=1000):
         self.pdb_dir = Path(pdb_dir)
         self.fasta_dir = Path(fasta_dir)
         self.output_dir = Path(output_dir)
@@ -61,13 +61,17 @@ class RNAClusteringPipeline:
                     lines = f.readlines()
                     sequence = ''.join(line.strip() for line in lines if not line.startswith('>'))
                     
-                if len(sequence) <= self.max_seq_len:
+                # Filter by both minimum and maximum length
+                # US-align requires at least 3 residues to work properly
+                if 3 <= len(sequence) <= self.max_seq_len:
                     valid_samples.append({
                         'pdb_id': pdb_id,
                         'pdb_file': pdb_file,
                         'fasta_file': fasta_file,
                         'length': len(sequence)
                     })
+                elif len(sequence) < 3:
+                    logger.debug(f"Skipping {pdb_id}: sequence too short ({len(sequence)} residues, minimum 3 required)")
                     
             except Exception as e:
                 logger.error(f"Error reading {fasta_file}: {e}")
@@ -168,15 +172,25 @@ class RNAClusteringPipeline:
                 
                 try:
                     cmd = ["US-align", str(sample1['pdb_file']), str(sample2['pdb_file'])]
-                    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+                    result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=30)
                     
                     # Parse TM-score from output
                     tm_score = self.parse_tm_score(result.stdout)
                     tm_scores[(pdb1, pdb2)] = tm_score
                     tm_scores[(pdb2, pdb1)] = tm_score  # Symmetric
                     
-                except subprocess.CalledProcessError as e:
-                    logger.warning(f"US-align failed for {pdb1}-{pdb2}: {e}")
+                except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+                    # Handle both regular errors and crashes (SIGSEGV, etc.)
+                    if hasattr(e, 'returncode') and e.returncode < 0:
+                        # Negative return codes indicate signals (e.g., SIGSEGV = -11)
+                        logger.warning(f"US-align crashed for {pdb1}-{pdb2}: Signal {abs(e.returncode)} (likely due to problematic PDB structure)")
+                    else:
+                        logger.warning(f"US-align failed for {pdb1}-{pdb2}: {e}")
+                    tm_scores[(pdb1, pdb2)] = 0.0
+                    tm_scores[(pdb2, pdb1)] = 0.0
+                except Exception as e:
+                    # Catch any other unexpected errors
+                    logger.warning(f"Unexpected error for {pdb1}-{pdb2}: {e}")
                     tm_scores[(pdb1, pdb2)] = 0.0
                     tm_scores[(pdb2, pdb1)] = 0.0
                     

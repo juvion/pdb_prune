@@ -1,0 +1,36 @@
+================================================================
+Program: CD-HIT, V4.8.1, Apr 07 2021, 02:35:32
+Command: cd-hit-est -i rna_sequences.fasta -o
+         clusters_seq_0.8.fasta -c 0.8 -n 7 -M 2000 -T 4
+
+Started: Fri Nov  7 14:20:12 2025
+================================================================
+                            Output                              
+----------------------------------------------------------------
+Option -T is ignored: multi-threading with OpenMP is NOT enabled!
+total seq: 1133
+longest and shortest : 271 and 20
+Total letters: 91497
+Sequences have been sorted
+
+Approximated minimal memory consumption:
+Sequence        : 0M
+Buffer          : 1 X 12M = 12M
+Table           : 1 X 0M = 0M
+Miscellaneous   : 0M
+Total           : 12M
+
+Table limit with the given memory limit:
+Max number of representatives: 4000000
+Max number of word counting entries: 248411586
+
+comparing sequences from          0  to       1133
+.
+     1133  finished        481  clusters
+
+Approximated maximum memory consumption: 12M
+writing new database
+writing clustering information
+program completed !
+
+Total CPU time 0.32

@@ -5,14 +5,7 @@ This script helps recover from interrupted downloads and provides flexible optio
 """
 
 import os
-import sys
 import argparse
-
-# Add the project root to Python path to allow imports
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 from utils.pdb_downloader import download_rna_pdbs
 
 def count_existing_files(directory):

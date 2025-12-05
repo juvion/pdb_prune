@@ -1,0 +1,59 @@
+1.
+$ python sequence_similarity_score2-old.py test_score/test1/8ZYD_1_C_pred.fasta test_score/test1/8ZYD_1_C.fasta test_score/test1/8ZYD_1_C.txt --seq-score recovery_rate
+
+Minimum separation constraint: 4 (positions with j-i < 4 excluded from scoring)
+======================================================================
+RNA SEQUENCE SCORING RESULTS
+======================================================================
+
+Sequence Length: 72
+Reference Seq:  AGGCUUGUAGCUCAGGUGGUUAGAGCGCACCCCUGAUAGGGUGAGGUCGGUGGUUCAAGUCCACUCAGGCCU
+Predicted Seq:  AGGCUUGUAGCGCACCGCCGGACAGCCCACCCCUGAUAGGGUGAGGUCGGUGGUUCAAGUCCACUCAGGCCU
+
+COMBINED SCORE:           0.7404
+  Base Pair Score:        0.6196 (λ = 0.50)
+  Sequence Score:         0.8611 (1-λ = 0.50) [recovery_rate]
+
+BASE PAIR ANALYSIS:
+  Total positions scored:        2346 (upper triangle only)
+  Paired positions:              33
+  Unpaired positions:            2313
+  Raw score:                     1515/2445
+  Structure accuracy:            0.6970 (23/33)
+  Non-structure accuracy:        0.6152 (1423/2313)
+  Min separation used:           4 (positions with j-i < 4 excluded)
+
+SEQUENCE ANALYSIS: (using recovery_rate)
+  Correct positions:             62/72
+  Recovery rate:                 0.8611
+
+2.
+$ python sequence_similarity_score2.py test_score/test1/8ZYD_1_C_pred.fasta test_score/test1/8ZYD_1_C.fasta test_score/test1/8ZYD_1_C.txt --seq-score recovery_rate
+
+======================================================================
+Minimum separation constraint: 4 (positions with j-i < 4 excluded from scoring)
+======================================================================
+RNA SEQUENCE SCORING RESULTS
+======================================================================
+
+Sequence Length: 72
+Reference Seq:  AGGCUUGUAGCUCAGGUGGUUAGAGCGCACCCCUGAUAGGGUGAGGUCGGUGGUUCAAGUCCACUCAGGCCU
+Predicted Seq:  AGGCUUGUAGCGCACCGCCGGACAGCCCACCCCUGAUAGGGUGAGGUCGGUGGUUCAAGUCCACUCAGGCCU
+
+COMBINED SCORE:           0.7404
+  Base Pair Score:        0.6196 (λ = 0.50)
+  Sequence Score:         0.8611 (1-λ = 0.50) [recovery_rate]
+
+BASE PAIR ANALYSIS:
+  Total positions scored:        2346 (upper triangle only)
+  Paired positions:              33
+  Unpaired positions:            2313
+  Raw score:                     1515/2445
+  Structure accuracy:            0.6970 (23/33)
+  Non-structure accuracy:        0.6152 (1423/2313)
+  Min separation used:           4 (positions with j-i < 4 excluded)
+
+SEQUENCE ANALYSIS: (using recovery_rate)
+  Correct positions:             62/72
+  Recovery rate:                 0.8611
+======================================================================

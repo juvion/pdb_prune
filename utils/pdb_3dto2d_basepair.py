@@ -477,10 +477,11 @@ Examples:
   %(prog)s input.pdb --distance-method n1_n9
   %(prog)s input.pdb --distance-method both --no-coplanarity
   %(prog)s input.pdb -o matrix.txt -p pairs.txt -s
+  %(prog)s --input-dir /path/to/pdbs --output-dir /path/to/matrices --distance-method both
         """
     )
     
-    parser.add_argument('pdb_file', help='Input PDB file')
+    parser.add_argument('pdb_file', nargs='?', help='Input PDB/CIF file')
     parser.add_argument('-o', '--output-matrix', help='Output matrix file')
     parser.add_argument('-p', '--output-pairs', help='Output base pair list file')
     parser.add_argument('--distance-method', choices=['c1_c1', 'n1_n9', 'both'], 
@@ -492,8 +493,71 @@ Examples:
                        help='Keep isolated base pairs')
     parser.add_argument('-s', '--summary', action='store_true',
                        help='Print summary statistics')
+    # New: directory processing arguments
+    parser.add_argument('--input-dir', help='Input directory containing PDB/CIF files')
+    parser.add_argument('--output-dir', help='Output directory to write matrix files (one per input)')
     
     args = parser.parse_args()
+    
+    # Directory mode
+    if args.input_dir:
+        in_dir = Path(args.input_dir)
+        if not in_dir.exists() or not in_dir.is_dir():
+            print(f"Error: Input directory '{args.input_dir}' not found or not a directory", file=sys.stderr)
+            sys.exit(1)
+        if not args.output_dir:
+            print("Error: --output-dir is required when using --input-dir", file=sys.stderr)
+            sys.exit(1)
+        out_dir = Path(args.output_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        
+        pdb_files = sorted([p for p in in_dir.iterdir() if p.suffix.lower() in ('.pdb', '.cif')])
+        if not pdb_files:
+            print(f"Warning: No .pdb or .cif files found in '{in_dir}'", file=sys.stderr)
+            sys.exit(0)
+        
+        total = len(pdb_files)
+        processed = 0
+        skipped = 0
+        errors = 0
+        print(f"Found {total} structure files in '{in_dir}'. Writing matrices to '{out_dir}'...")
+        
+        for pdb_path in pdb_files:
+            try:
+                print(f"\nParsing PDB/CIF file: {pdb_path}")
+                nucleotides = PDBParser.parse(str(pdb_path))
+                
+                if not nucleotides:
+                    print(f"Warning: No RNA nucleotides found in {pdb_path}, skipping.", file=sys.stderr)
+                    skipped += 1
+                    continue
+                
+                bp_matrix = BasePairingMatrix(nucleotides)
+                bp_matrix.detect_base_pairs(
+                    require_coplanarity=not args.no_coplanarity,
+                    remove_isolated=not args.keep_isolated,
+                    distance_method=args.distance_method
+                )
+                
+                out_matrix = out_dir / f"{pdb_path.stem}.txt"
+                bp_matrix.save_matrix(str(out_matrix))
+                processed += 1
+            except Exception as e:
+                print(f"Error processing {pdb_path}: {e}", file=sys.stderr)
+                errors += 1
+                continue
+        
+        print("\n=== Batch Processing Summary ===")
+        print(f"Total files: {total}")
+        print(f"Processed: {processed}")
+        print(f"Skipped (no RNA): {skipped}")
+        print(f"Errors: {errors}")
+        return
+    
+    # Single-file mode
+    if not args.pdb_file:
+        print("Error: PDB file is required in single-file mode. Provide a file path or use --input-dir.", file=sys.stderr)
+        sys.exit(1)
     
     # Check if input file exists
     if not Path(args.pdb_file).exists():
