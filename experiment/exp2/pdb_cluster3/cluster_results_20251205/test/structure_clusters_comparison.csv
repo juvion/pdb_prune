@@ -1,0 +1,4 @@
+threshold,distance_threshold,num_clusters,num_structures,max_cluster_size,min_cluster_size,avg_cluster_size,median_cluster_size,singleton_clusters
+0.4,0.6,78,223,14,1,2.858974358974359,2.0,15
+0.5,0.5,117,223,10,1,1.9059829059829059,2.0,51
+0.6,0.4,151,223,10,1,1.4768211920529801,1.0,104
